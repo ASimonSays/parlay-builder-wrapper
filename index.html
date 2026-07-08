@@ -157,7 +157,7 @@
     .appFrame {
       display: block;
       width: 100%;
-      height: 2200px;
+      height: var(--app-frame-height, 2300px);
       min-height: calc(100svh - 120px);
       border: 0;
       border-radius: 8px;
@@ -203,7 +203,6 @@
       }
 
       .appFrame {
-        height: 2300px;
         border-radius: 7px;
       }
     }
@@ -222,7 +221,6 @@
           class="appFrame"
           src="https://script.google.com/macros/s/AKfycbzPrITdaAT9azpkORu3wDh9m-nQF1JyTfUjx58PDxbtjIcHZKk-7xCV9bwauTDQ6YKDHw/exec"
           title="Parlay Tracker"
-          scrolling="no"
           allow="clipboard-read; clipboard-write">
         </iframe>
       </div>
@@ -235,5 +233,47 @@
       </div>
     </noscript>
   </div>
+
+  <script>
+    (function () {
+      const MESSAGE_TYPE = "PARLAY_TRACKER_HEIGHT";
+      const MIN_FRAME_HEIGHT = 1200;
+      const HEIGHT_PADDING = 32;
+      const MAX_FRAME_HEIGHT = 12000;
+
+      const frame = document.querySelector(".appFrame");
+
+      if (!frame) return;
+
+      function setFrameHeight(rawHeight) {
+        const numericHeight = Number(rawHeight);
+
+        if (!Number.isFinite(numericHeight) || numericHeight <= 0) return;
+
+        const nextHeight = Math.max(
+          MIN_FRAME_HEIGHT,
+          Math.min(MAX_FRAME_HEIGHT, Math.ceil(numericHeight + HEIGHT_PADDING))
+        );
+
+        document.documentElement.style.setProperty("--app-frame-height", nextHeight + "px");
+      }
+
+      window.addEventListener("message", function (event) {
+        const data = event.data || {};
+
+        if (data.type !== MESSAGE_TYPE) return;
+
+        setFrameHeight(data.height);
+      });
+
+      frame.addEventListener("load", function () {
+        setTimeout(function () {
+          window.scrollTo(window.scrollX, window.scrollY + 1);
+          window.scrollTo(window.scrollX, Math.max(0, window.scrollY - 1));
+        }, 150);
+      });
+    })();
+  </script>
+
 </body>
 </html>
