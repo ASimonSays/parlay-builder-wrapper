@@ -2,32 +2,34 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Parlay Ticket Builder</title>
+  <title>Parlay Tracker</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#07111f">
-  <meta name="apple-mobile-web-app-title" content="Parlay Builder">
+  <meta name="theme-color" content="#d7dde6">
+  <meta name="apple-mobile-web-app-title" content="Parlay Tracker">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
 
-  <!-- Browser / Safari Favorites path. -->
-  <link rel="icon" href="./favicon.ico" sizes="any">
-  <link rel="shortcut icon" href="./favicon.ico">
-  <link rel="icon" type="image/png" sizes="64x64" href="./ssb_favicon_full_transparent_64.png">
-  <link rel="icon" type="image/png" sizes="128x128" href="./ssb_favicon_full_transparent_128.png">
-
-  <!-- iPhone Share Sheet / Add to Home Screen path. Dark-backed on purpose. -->
-  <link rel="apple-touch-icon" sizes="180x180" href="./ssb_apple_touch_home_dark_180.png">
-  <link rel="apple-touch-icon-precomposed" sizes="180x180" href="./ssb_apple_touch_home_dark_180.png">
-
-  <!-- Manifest also points to dark-backed home-screen icons. -->
-  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="64x64" href="./ssb_emblem_favicon_transparent_64.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./ssb_emblem_ios_safe_dark_180.png">
 
   <style>
     :root {
-      --bg: #07111f;
-      --line: rgba(148, 163, 184, 0.22);
-      --text: #f8fafc;
+      --silver-1: #f6f8fb;
+      --silver-2: #e4e9f0;
+      --silver-3: #cfd6df;
+      --silver-4: #adb7c4;
+      --silver-5: #7f8a98;
+      --edge: rgba(255,255,255,0.84);
+      --edge-dark: rgba(44, 52, 63, 0.34);
+      --text: #1a2028;
+      --muted: #5d6673;
+      --shadow: rgba(0,0,0,0.16);
+      --gold: #ddb35a;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     html,
@@ -35,10 +37,21 @@
       margin: 0;
       width: 100%;
       height: 100%;
-      background: var(--bg);
-      color: var(--text);
       overflow: hidden;
+      color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top center, rgba(255,255,255,0.88), transparent 36%),
+        repeating-linear-gradient(
+          100deg,
+          rgba(255,255,255,0.22) 0px,
+          rgba(255,255,255,0.22) 1px,
+          rgba(0,0,0,0.025) 1px,
+          rgba(0,0,0,0.025) 3px,
+          transparent 3px,
+          transparent 11px
+        ),
+        linear-gradient(180deg, var(--silver-1) 0%, var(--silver-3) 44%, var(--silver-4) 100%);
     }
 
     .shell {
@@ -46,39 +59,145 @@
       inset: 0;
       display: flex;
       flex-direction: column;
-      background: var(--bg);
+      background:
+        radial-gradient(circle at top center, rgba(255,255,255,0.68), transparent 36%),
+        linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04)),
+        linear-gradient(180deg, var(--silver-2) 0%, var(--silver-3) 40%, var(--silver-4) 100%);
     }
 
     .brand {
-      display: none;
+      position: relative;
       flex: 0 0 auto;
-      padding: max(10px, env(safe-area-inset-top)) 14px 8px;
-      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 58px;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)))
+        14px
+        10px;
+      border-bottom: 1px solid var(--edge-dark);
       background:
-        radial-gradient(circle at top left, rgba(212, 175, 55, 0.14), transparent 34%),
-        linear-gradient(180deg, #0a1424 0%, #07111f 100%);
+        linear-gradient(180deg, rgba(255,255,255,0.90), rgba(235,240,246,0.76) 28%, rgba(178,188,201,0.84) 100%),
+        repeating-linear-gradient(
+          98deg,
+          rgba(255,255,255,0.20) 0,
+          rgba(255,255,255,0.20) 1px,
+          rgba(0,0,0,0.02) 1px,
+          rgba(0,0,0,0.02) 3px,
+          transparent 3px,
+          transparent 11px
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.94),
+        inset 0 -1px 0 rgba(44,52,63,0.18),
+        0 8px 18px var(--shadow);
+      overflow: hidden;
+    }
+
+    .brand::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(110deg, rgba(255,255,255,0.52), transparent 30%, rgba(255,255,255,0.12) 58%, transparent 82%);
+      pointer-events: none;
+    }
+
+    .brand::after {
+      content: "";
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.95), rgba(221,179,90,0.72), rgba(255,255,255,0.95), transparent);
+      opacity: 0.9;
+      pointer-events: none;
     }
 
     .brand img {
+      position: relative;
+      z-index: 1;
       display: block;
-      width: min(280px, 72vw);
-      max-height: 92px;
+      width: min(250px, 68vw);
+      max-height: 70px;
       object-fit: contain;
-      margin: 0 auto;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.14));
+    }
+
+    .frameWrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 10px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
+        linear-gradient(180deg, #d8dee7 0%, #c4ccd7 100%);
+    }
+
+    .frameBezel {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      padding: 6px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.86), rgba(218,225,234,0.84) 36%, rgba(146,157,171,0.90) 100%);
+      border: 1px solid rgba(255,255,255,0.86);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.94),
+        inset 0 -1px 0 rgba(44,52,63,0.20),
+        0 14px 28px rgba(0,0,0,0.14);
     }
 
     .appFrame {
       display: block;
       width: 100%;
-      flex: 1 1 auto;
-      min-height: 0;
+      height: 100%;
       border: 0;
-      background: var(--bg);
+      border-radius: 8px;
+      background: #eef2f7;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.78),
+        0 1px 0 rgba(255,255,255,0.46);
     }
 
-    @media (min-width: 760px) {
+    .fallback {
+      display: none;
+      padding: 18px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .fallback a {
+      color: #3f4e63;
+      font-weight: 700;
+    }
+
+    @media (max-width: 720px) {
       .brand {
-        display: block;
+        min-height: 52px;
+        padding:
+          calc(max(8px, env(safe-area-inset-top)))
+          12px
+          8px;
+      }
+
+      .brand img {
+        width: min(220px, 72vw);
+        max-height: 58px;
+      }
+
+      .frameWrap {
+        padding: 6px;
+      }
+
+      .frameBezel {
+        border-radius: 10px;
+        padding: 4px;
+      }
+
+      .appFrame {
+        border-radius: 7px;
       }
     }
   </style>
@@ -90,12 +209,23 @@
       <img src="./ssb_full_logo_web_768.png" alt="Simon Sports Betting">
     </header>
 
-    <iframe
-      class="appFrame"
-      src="https://script.google.com/macros/s/AKfycbzPrITdaAT9azpkORu3wDh9m-nQF1JyTfUjx58PDxbtjIcHZKk-7xCV9bwauTDQ6YKDHw/exec"
-      title="Parlay Ticket Builder"
-      allow="clipboard-read; clipboard-write">
-    </iframe>
+    <div class="frameWrap">
+      <div class="frameBezel">
+        <iframe
+          class="appFrame"
+          src="https://script.google.com/macros/s/AKfycbzPrITdaAT9azpkORu3wDh9m-nQF1JyTfUjx58PDxbtjIcHZKk-7xCV9bwauTDQ6YKDHw/exec"
+          title="Parlay Tracker"
+          allow="clipboard-read; clipboard-write">
+        </iframe>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="fallback">
+        JavaScript is required. Open the builder directly:
+        <a href="https://script.google.com/macros/s/AKfycbzPrITdaAT9azpkORu3wDh9m-nQF1JyTfUjx58PDxbtjIcHZKk-7xCV9bwauTDQ6YKDHw/exec">Parlay Tracker</a>
+      </div>
+    </noscript>
   </div>
 </body>
 </html>
