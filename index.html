@@ -224,11 +224,35 @@
       overflow: hidden;
     }
 
+  
+    .heightDebug {
+      position: fixed;
+      right: 8px;
+      bottom: calc(8px + env(safe-area-inset-bottom));
+      z-index: 999999;
+      width: min(265px, calc(100vw - 16px));
+      padding: 8px 9px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.72);
+      background: rgba(20, 24, 30, 0.86);
+      color: #f3f6fa;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 10.5px;
+      line-height: 1.35;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.28);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      pointer-events: none;
+      white-space: pre-wrap;
+    }
+
   </style>
 </head>
 
 <body>
   <div class="shell">
+    <div class="heightDebug" id="heightDebug">height debug: waiting for message</div>
+
     <header class="brand" aria-label="Simon Sports Betting">
       <img src="./ssb_emblem_webapp_logo_transparent_768.png" alt="SSB">
     </header>
@@ -261,8 +285,36 @@
       const MAX_FRAME_HEIGHT = 16000;
 
       const frame = document.querySelector(".appFrame");
+      const debug = document.getElementById("heightDebug");
+
+      let messages = 0;
+      let appliedHeight = 0;
+      let lastRawHeight = 0;
+      let lastReason = "none";
+      let lastSequence = 0;
+      let lastLegsSeen = 0;
+      let lastBodyScrollHeight = 0;
+      let lastDocScrollHeight = 0;
+      let lastViewportHeight = 0;
+      let lastAge = "n/a";
 
       if (!frame) return;
+
+      function updateDebug(status) {
+        if (!debug) return;
+
+        debug.textContent =
+          "height debug: " + (status || "active") + "\n" +
+          "messages: " + messages + "\n" +
+          "seq: " + lastSequence + "\n" +
+          "raw height: " + lastRawHeight + "\n" +
+          "applied iframe: " + appliedHeight + "\n" +
+          "legs seen: " + lastLegsSeen + "\n" +
+          "body/doc: " + lastBodyScrollHeight + " / " + lastDocScrollHeight + "\n" +
+          "viewport: " + lastViewportHeight + "\n" +
+          "reason: " + lastReason + "\n" +
+          "age: " + lastAge;
+      }
 
       function setFrameHeight(rawHeight, reason) {
         const numericHeight = Number(rawHeight);
@@ -274,10 +326,14 @@
           Math.min(MAX_FRAME_HEIGHT, Math.ceil(numericHeight + HEIGHT_PADDING))
         );
 
+        appliedHeight = nextHeight;
+
         document.documentElement.style.setProperty("--app-frame-height", nextHeight + "px");
         frame.style.height = nextHeight + "px";
         frame.dataset.reportedHeight = String(nextHeight);
         frame.dataset.heightReason = reason || "message";
+
+        updateDebug(reason || "height-applied");
       }
 
       window.addEventListener("message", function (event) {
@@ -285,23 +341,39 @@
 
         if (data.type !== MESSAGE_TYPE) return;
 
+        messages += 1;
+        lastRawHeight = data.height || 0;
+        lastReason = data.reason || "postMessage";
+        lastSequence = data.sequence || 0;
+        lastLegsSeen = data.legsSeen || 0;
+        lastBodyScrollHeight = data.bodyScrollHeight || 0;
+        lastDocScrollHeight = data.docScrollHeight || 0;
+        lastViewportHeight = data.viewportHeight || 0;
+        lastAge = data.sentAt ? String(Date.now() - Number(data.sentAt)) + "ms" : "n/a";
+
         setFrameHeight(data.height, "postMessage");
       });
 
-      // Fallback in case Apps Script's sandbox blocks height messages.
-      // This is deliberately generous so the app does not clip while testing.
       frame.addEventListener("load", function () {
+        updateDebug("iframe loaded; waiting");
+
         setTimeout(function () {
-          setFrameHeight(3600, "load-fallback");
+          if (messages === 0) {
+            setFrameHeight(3600, "load-fallback/no-message");
+          }
+
           window.scrollTo(window.scrollX, window.scrollY + 1);
           window.scrollTo(window.scrollX, Math.max(0, window.scrollY - 1));
         }, 150);
 
         setTimeout(function () {
-          const current = Number(frame.dataset.reportedHeight || 0);
-          if (current < 3000) setFrameHeight(4200, "late-fallback");
+          if (messages === 0) {
+            setFrameHeight(4200, "late-fallback/no-message");
+          }
         }, 1200);
       });
+
+      updateDebug("booted");
     })();
   </script>
 
