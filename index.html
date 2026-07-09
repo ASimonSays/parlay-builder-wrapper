@@ -157,7 +157,7 @@
     .appFrame {
       display: block;
       width: 100%;
-      height: var(--app-frame-height, 3600px);
+      height: var(--app-frame-height, 2600px);
       min-height: calc(100svh - 120px);
       border: 0;
       border-radius: 8px;
@@ -223,37 +223,12 @@
     .appFrame {
       overflow: hidden;
     }
-
-  
-    .heightDebug {
-      position: fixed;
-      right: 8px;
-      bottom: calc(8px + env(safe-area-inset-bottom));
-      z-index: 999999;
-      width: min(265px, calc(100vw - 16px));
-      padding: 8px 9px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.72);
-      background: rgba(20, 24, 30, 0.86);
-      color: #f3f6fa;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 10.5px;
-      line-height: 1.35;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.28);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      pointer-events: none;
-      white-space: pre-wrap;
-    }
-
-  </style>
+</style>
 </head>
 
 <body>
   <div class="shell">
-    <div class="heightDebug" id="heightDebug">height debug: waiting for message</div>
-
-    <header class="brand" aria-label="Simon Sports Betting">
+<header class="brand" aria-label="Simon Sports Betting">
       <img src="./ssb_emblem_webapp_logo_transparent_768.png" alt="SSB">
     </header>
 
@@ -280,43 +255,15 @@
   <script>
     (function () {
       const MESSAGE_TYPE = "PARLAY_TRACKER_HEIGHT";
-      const MIN_FRAME_HEIGHT = 1800;
-      const HEIGHT_PADDING = 160;
-      const MAX_FRAME_HEIGHT = 16000;
+      const MIN_FRAME_HEIGHT = 1200;
+      const HEIGHT_PADDING = 60;
+      const MAX_FRAME_HEIGHT = 12000;
 
       const frame = document.querySelector(".appFrame");
-      const debug = document.getElementById("heightDebug");
-
-      let messages = 0;
-      let appliedHeight = 0;
-      let lastRawHeight = 0;
-      let lastReason = "none";
-      let lastSequence = 0;
-      let lastLegsSeen = 0;
-      let lastBodyScrollHeight = 0;
-      let lastDocScrollHeight = 0;
-      let lastViewportHeight = 0;
-      let lastAge = "n/a";
 
       if (!frame) return;
 
-      function updateDebug(status) {
-        if (!debug) return;
-
-        debug.textContent =
-          "height debug: " + (status || "active") + "\n" +
-          "messages: " + messages + "\n" +
-          "seq: " + lastSequence + "\n" +
-          "raw height: " + lastRawHeight + "\n" +
-          "applied iframe: " + appliedHeight + "\n" +
-          "legs seen: " + lastLegsSeen + "\n" +
-          "body/doc: " + lastBodyScrollHeight + " / " + lastDocScrollHeight + "\n" +
-          "viewport: " + lastViewportHeight + "\n" +
-          "reason: " + lastReason + "\n" +
-          "age: " + lastAge;
-      }
-
-      function setFrameHeight(rawHeight, reason) {
+      function setFrameHeight(rawHeight) {
         const numericHeight = Number(rawHeight);
 
         if (!Number.isFinite(numericHeight) || numericHeight <= 0) return;
@@ -326,14 +273,8 @@
           Math.min(MAX_FRAME_HEIGHT, Math.ceil(numericHeight + HEIGHT_PADDING))
         );
 
-        appliedHeight = nextHeight;
-
         document.documentElement.style.setProperty("--app-frame-height", nextHeight + "px");
         frame.style.height = nextHeight + "px";
-        frame.dataset.reportedHeight = String(nextHeight);
-        frame.dataset.heightReason = reason || "message";
-
-        updateDebug(reason || "height-applied");
       }
 
       window.addEventListener("message", function (event) {
@@ -341,39 +282,16 @@
 
         if (data.type !== MESSAGE_TYPE) return;
 
-        messages += 1;
-        lastRawHeight = data.height || 0;
-        lastReason = data.reason || "postMessage";
-        lastSequence = data.sequence || 0;
-        lastLegsSeen = data.legsSeen || 0;
-        lastBodyScrollHeight = data.bodyScrollHeight || 0;
-        lastDocScrollHeight = data.docScrollHeight || 0;
-        lastViewportHeight = data.viewportHeight || 0;
-        lastAge = data.sentAt ? String(Date.now() - Number(data.sentAt)) + "ms" : "n/a";
-
-        setFrameHeight(data.height, "postMessage");
+        setFrameHeight(data.height);
       });
 
       frame.addEventListener("load", function () {
-        updateDebug("iframe loaded; waiting");
-
         setTimeout(function () {
-          if (messages === 0) {
-            setFrameHeight(3600, "load-fallback/no-message");
-          }
-
+          setFrameHeight(2600);
           window.scrollTo(window.scrollX, window.scrollY + 1);
           window.scrollTo(window.scrollX, Math.max(0, window.scrollY - 1));
         }, 150);
-
-        setTimeout(function () {
-          if (messages === 0) {
-            setFrameHeight(4200, "late-fallback/no-message");
-          }
-        }, 1200);
       });
-
-      updateDebug("booted");
     })();
   </script>
 
