@@ -1,6 +1,7 @@
 name: Patch leg drag and labels
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - '.github/workflows/patch-leg-drag.yml'
@@ -34,8 +35,8 @@ jobs:
                 raw=clean(d.querySelector(".target").value),
                 num=Number(raw),
                 hasNum=raw!==""&&Number.isFinite(num),
-                overLine=hasNum?(Number.isInteger(num-.5)?String(num-.5):String(Math.round((num-.5)*10)/10)):"",
-                underLine=hasNum?(Number.isInteger(num+.5)?String(num+.5):String(Math.round((num+.5)*10)/10)):"";
+                overLine=hasNum?String(Math.round((num-.5)*10)/10):"",
+                underLine=hasNum?String(Math.round((num+.5)*10)/10):"";
             if(t==="manual")return clean(d.querySelector(".lbl").value);
             if(t==="void")return "VOID";
             if(t==="draw")return "Draw";
@@ -79,7 +80,7 @@ jobs:
       - name: Commit patch
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898242+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --cached --quiet && exit 0
           git commit -m "Enable touch drag and correct auto labels"
