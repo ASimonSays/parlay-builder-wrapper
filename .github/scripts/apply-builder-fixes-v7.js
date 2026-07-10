@@ -3,24 +3,32 @@ const fs = require('fs');
 const path = 'index.html';
 let s = fs.readFileSync(path, 'utf8');
 
-// Remove the previous always-on drag patch while preserving its corrected label logic below.
-s = s.replace(/\n?\/\* BUILDER_FIXES_V6 \*\/\.grip\{[^\n]*\n?/g, '\n');
-s = s.replace(/\/\* BUILDER_FIXES_V6 \*\/[\s\S]*?(?=<\/script>)/g, '');
+// Replace the previous dedicated reorder-mode patch cleanly.
+s = s.replace(/\n?\/\* BUILDER_REORDER_MODE_V7 \*\/[\s\S]*?(?=<\/style>)/g, '\n');
+s = s.replace(/\n?\/\* BUILDER_REORDER_MODE_V8 \*\/[\s\S]*?(?=<\/style>)/g, '\n');
+s = s.replace(/\n?\/\* BUILDER_REORDER_MODE_V7 \*\/[\s\S]*?(?=<\/script>)/g, '\n');
+s = s.replace(/\n?\/\* BUILDER_REORDER_MODE_V8 \*\/[\s\S]*?(?=<\/script>)/g, '\n');
 
 const css = String.raw`
-/* BUILDER_REORDER_MODE_V7 */
+/* BUILDER_REORDER_MODE_V8 */
 .legsTitleRow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
 .reorderToggle{display:none;width:auto;min-width:126px;padding:9px 11px;font-size:11px}
 .reorderToggle.visible{display:inline-flex;align-items:center;justify-content:center}
 .reorderToggle.active{background:linear-gradient(180deg,#f8fbff,#d7dee8 48%,#7e8a99);border-color:rgba(105,116,130,.65);color:#111820}
 .leg .headControls{display:none}
+.leg .normalRemove{display:none}
+.leg.hasMultiple .normalRemove{display:inline-flex;align-items:center;justify-content:center;width:42px;height:34px;padding:0;border-radius:8px}
 body.reorderMode .leg{margin-top:10px;padding:11px 10px;border:1px solid rgba(255,255,255,.72);border-radius:10px;background:linear-gradient(180deg,rgba(250,252,255,.86),rgba(197,206,218,.82));box-shadow:inset 0 1px 0 rgba(255,255,255,.88),0 3px 8px rgba(0,0,0,.12);touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
 body.reorderMode .leg.straightInactive{opacity:1;filter:none}
 body.reorderMode .leg > :not(.legHead){display:none!important}
-body.reorderMode .legHead{margin:0;min-height:38px}
-body.reorderMode .leg .headControls{display:flex}
-body.reorderMode .leg .miniRemove,body.reorderMode .leg .grip{display:inline-flex!important}
-body.reorderMode .leg .grip{cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+body.reorderMode .legHead{display:grid;grid-template-columns:minmax(0,1fr) 64px 94px;align-items:center;gap:16px;margin:0;min-height:42px}
+body.reorderMode .legHeadLeft{min-width:0}
+body.reorderMode .leg .headControls{display:contents}
+body.reorderMode .leg .normalRemove{display:none!important}
+body.reorderMode .leg .miniRemove{display:inline-flex!important;grid-column:3;width:94px;height:36px;padding:0 12px;align-items:center;justify-content:center;font-size:11px;letter-spacing:.07em}
+body.reorderMode .leg .miniRemove::after{content:'REMOVE'}
+body.reorderMode .leg .miniRemove{font-size:0}
+body.reorderMode .leg .grip{display:inline-flex!important;grid-column:2;width:64px;height:36px;align-items:center;justify-content:center;justify-self:center;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;font-size:20px}
 body.reorderMode .straightPick{display:none!important}
 .reorderSummary{max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#66717f;font-size:11px;font-weight:750;letter-spacing:0;text-transform:none}
 .leg.reorderDragging{opacity:.82!important;filter:none!important;position:relative;z-index:30;transform:scale(1.015);box-shadow:0 12px 24px rgba(0,0,0,.24)!important;cursor:grabbing}
@@ -30,7 +38,7 @@ body.reorderMode .reorderHint{display:block}
 `;
 
 const js = String.raw`
-/* BUILDER_REORDER_MODE_V7 */
+/* BUILDER_REORDER_MODE_V8 */
 let reorderMode = false;
 let reorderLeg = null;
 let reorderPointerId = null;
@@ -56,8 +64,22 @@ function ensureReorderToolbar(){
   row.appendChild(btn);
   const hint = document.createElement('div');
   hint.className = 'reorderHint';
-  hint.textContent = 'Drag a leg to move it. Use − to remove it.';
+  hint.textContent = 'Hold the center handle and drag. Use Remove to delete a leg.';
   row.insertAdjacentElement('afterend',hint);
+}
+
+function ensureNormalRemoveButtons(){
+  legsArray().forEach(leg=>{
+    const controls=leg.querySelector('.headControls');
+    if(!controls || controls.querySelector('.normalRemove')) return;
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='miniRemove normalRemove';
+    btn.textContent='−';
+    btn.setAttribute('aria-label','Remove leg');
+    btn.addEventListener('click',()=>removeLeg(btn));
+    controls.insertBefore(btn,controls.firstChild);
+  });
 }
 
 function updateReorderSummaries(){
@@ -75,6 +97,7 @@ function updateReorderSummaries(){
 
 function applyReorderState(){
   ensureReorderToolbar();
+  ensureNormalRemoveButtons();
   const legs=legsArray();
   const btn=document.getElementById('reorderLegsBtn');
   if(reorderMode&&legs.length<2) reorderMode=false;
@@ -86,12 +109,15 @@ function applyReorderState(){
   }
   updateReorderSummaries();
   legs.forEach(leg=>{
-    const remove=leg.querySelector('.miniRemove');
+    leg.classList.toggle('hasMultiple',legs.length>=2);
+    const oldRemove=leg.querySelector('.miniRemove:not(.normalRemove)');
+    const normalRemove=leg.querySelector('.normalRemove');
     const grip=leg.querySelector('.grip');
-    if(remove) remove.classList.toggle('hide',!reorderMode||legs.length<2);
+    if(oldRemove) oldRemove.classList.toggle('hide',!reorderMode||legs.length<2);
+    if(normalRemove) normalRemove.classList.toggle('hide',reorderMode||legs.length<2);
     if(grip) grip.classList.toggle('hide',!reorderMode||legs.length<2);
     leg.querySelectorAll('input,select,textarea,button').forEach(el=>{
-      if(el.classList.contains('miniRemove')){el.disabled=!reorderMode;return}
+      if(el.classList.contains('miniRemove')){el.disabled=legs.length<2;return}
       el.disabled=reorderMode;
     });
   });
@@ -117,14 +143,15 @@ function clearReorderDrag(){
 
 function startReorderDrag(e){
   if(!reorderMode) return;
-  if(e.target.closest('.miniRemove')||e.target.closest('#reorderLegsBtn')) return;
-  const leg=e.target.closest('#legs > .leg');
+  const handle=e.target.closest('.grip');
+  if(!handle) return;
+  const leg=handle.closest('#legs > .leg');
   if(!leg) return;
   e.preventDefault();
   reorderLeg=leg;
   reorderPointerId=e.pointerId;
   leg.classList.add('reorderDragging');
-  leg.setPointerCapture?.(e.pointerId);
+  handle.setPointerCapture?.(e.pointerId);
 }
 
 function continueReorderDrag(e){
@@ -154,20 +181,21 @@ function finishReorderDrag(e){
   preview();
 }
 
-const originalAddLegV7=window.addLeg;
+const originalAddLegV8=window.addLeg;
 window.addLeg=function(){
-  originalAddLegV7();
+  originalAddLegV8();
   requestAnimationFrame(()=>applyReorderState());
 };
-const originalRemoveLegV7=window.removeLeg;
+const originalRemoveLegV8=window.removeLeg;
 window.removeLeg=function(btn){
-  originalRemoveLegV7(btn);
+  originalRemoveLegV8(btn);
   requestAnimationFrame(()=>applyReorderState());
 };
 
 const reorderObserver=new MutationObserver(()=>requestAnimationFrame(applyReorderState));
 window.addEventListener('load',()=>{
   ensureReorderToolbar();
+  ensureNormalRemoveButtons();
   applyReorderState();
   const legs=document.getElementById('legs');
   if(legs) reorderObserver.observe(legs,{childList:true});
