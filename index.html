@@ -363,7 +363,7 @@ let editingTicketId='';
 function loadSavedTickets(){try{const v=JSON.parse(localStorage.getItem(SAVED_TICKETS_KEY)||'[]');return Array.isArray(v)?v:[]}catch(e){return[]}}
 function storeSavedTickets(list){localStorage.setItem(SAVED_TICKETS_KEY,JSON.stringify(list))}
 function makeTicketId(){return globalThis.crypto?.randomUUID?.()||('ticket-'+Date.now()+'-'+Math.random().toString(36).slice(2,8))}
-function isoToInput(v){v=clean(v);return /^\\d{8}$/.test(v)?v.slice(0,4)+'-'+v.slice(4,6)+'-'+v.slice(6):v}
+function isoToInput(v){v=clean(v);return /^\d{8}$/.test(v)?v.slice(0,4)+'-'+v.slice(4,6)+'-'+v.slice(6):v}
 function setPairValue(sel,input,value){value=clean(value);if(!value){sel.value='';input.value='';input.classList.add('hide');return}if([...sel.options].some(o=>o.value===value)){sel.value=value;input.value='';input.classList.add('hide')}else{sel.value=MAN;input.value=value;input.classList.remove('hide')}}
 function setTargetForLeg(d,value){const sel=d.querySelector('.targetSelect'),custom=d.querySelector('.targetCustom');configureTarget(d);if(value===undefined||value===null||value===''){sel.value='';custom.value='';custom.classList.add('hide');return}const text=String(value);if([...sel.options].some(o=>o.value===text)){sel.value=text;custom.value='';custom.classList.add('hide')}else{sel.value=MAN;custom.value=text;custom.classList.remove('hide')}}
 function ticketRecordFromBuilder(existing){const now=new Date().toISOString(),raw=rawTicket();return{id:existing?.id||makeTicketId(),sportsbook:clean($('sportsbook')?.value)||'Other',status:clean($('ticketStatus')?.value)||'active',createdAt:existing?.createdAt||now,updatedAt:now,ticket:raw,canonical:canonicalTicket()}}
