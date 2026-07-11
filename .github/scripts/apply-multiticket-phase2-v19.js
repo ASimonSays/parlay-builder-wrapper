@@ -1,0 +1,25 @@
+const fs=require('fs');
+const path='index.html';
+let s=fs.readFileSync(path,'utf8');
+const source=fs.readFileSync('.github/scripts/add-multiticket-phase2-v18.js','utf8');
+function between(start,end){const a=source.indexOf(start);if(a<0)throw new Error('missing '+start);const b=source.indexOf(end,a+start.length);if(b<0)throw new Error('missing '+end);return source.slice(a+start.length,b)}
+const css=between('const css=`','`;\nif(!s.includes(\'MULTI_TICKET_PHASE2_V18\'))');
+let dashboard=between('const phaseHtml=`','`;\ns=s.replace(header,phaseHtml);');
+dashboard=dashboard.replace(/^\$\{header\}\n?/,'');
+const js=between('const js=`','`;\nconst end=\'</script>\';');
+if(!s.includes('MULTI_TICKET_PHASE2_V18'))s=s.replace('</style>',css+'\n</style>');
+const header='<header class="top"><img class="logo" src="./ssb_full_logo_web_768.png" alt="Simon Sports Betting"><h1>PARLAY TRACKER</h1><p>Ticket Builder · Preview · Export</p></header>';
+if(!s.includes(header))throw new Error('header anchor not found');
+s=s.replace(header,header+'\n'+dashboard);
+s=s.replace('<section class="card"><div class="grid2"><div><label>Tracker</label>','<section class="card builderOnly"><div class="grid2"><div><label>Tracker</label>');
+s=s.replace('<div><label>Odds / Title</label><input id="odds" placeholder="+350"></div></div></section>','<div><label>Odds / Title</label><input id="odds" placeholder="+350"></div><div><label>Sportsbook</label><select id="sportsbook"><option>DraftKings</option><option>FanDuel</option><option>BetMGM</option><option>Caesars</option><option>Other</option></select></div><div><label>Ticket Status</label><select id="ticketStatus"><option value="active">Active</option><option value="completed">Completed</option></select></div></div></section>');
+s=s.replace('<section class="card"><strong>LEGS</strong>','<section class="card builderOnly"><strong>LEGS</strong>');
+s=s.replace('<section class="card previewCard">','<section class="card previewCard builderOnly">');
+s=s.replace('<section id="codePanel" class="card codePanel hide">','<section id="codePanel" class="card codePanel builderOnly hide">');
+const anchor='</section>\n<section id="codePanel" class="card codePanel builderOnly hide">';
+if(!s.includes(anchor))throw new Error('builder action anchor not found');
+s=s.replace(anchor,'</section>\n<section id="builderActionBar" class="card builderOnly"><div class="builderActionBar"><button id="backToTicketsBtn" class="ghost" type="button">Back to Tickets</button><button id="saveTicketBtn" type="button">Save Ticket</button></div><div id="saveStatus" class="status"></div></section>\n<section id="codePanel" class="card codePanel builderOnly hide">');
+const close=s.lastIndexOf('</script>');if(close<0)throw new Error('script end not found');
+s=s.slice(0,close)+js+'\n'+s.slice(close);
+fs.writeFileSync(path,s);
+console.log('Phase 2 multi-ticket foundation applied.');
