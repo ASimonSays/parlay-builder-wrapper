@@ -1,10 +1,15 @@
-/* MLB live runtime bootstrap V26 */
+/* MLB live runtime bootstrap V27 */
 (async()=>{
   'use strict';
   try{
-    const response=await fetch('./mlb-live.js?v=26',{cache:'no-store'});
+    const response=await fetch('./mlb-live.js?v=27',{cache:'no-store'});
     if(!response.ok)throw new Error('MLB runtime HTTP '+response.status);
     let code=await response.text();
+
+    const oldNorm="function norm(v){return cleanText(v).toLowerCase().replace(/[^a-z0-9]/g,'')}";
+    const newNorm="function norm(v){return cleanText(v).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')}";
+    if(!code.includes(oldNorm))throw new Error('MLB name-normalization marker missing');
+    code=code.replace(oldNorm,newNorm);
 
     const oldStatus="const status=document.createElement('div');status.id='liveRefreshStatus';";
     const newStatus="document.getElementById('liveRefreshStatus')?.remove();const status=document.createElement('div');status.id='liveRefreshStatus';";
@@ -51,7 +56,7 @@
     const oldInit="window.addEventListener('load',()=>setTimeout(wireRefresh,0));";
     const newInit="window.__parlayLiveRefresh=()=>{feedCache.clear();document.getElementById('liveRefreshStatus')?.remove();refreshStandaloneLive()};window.addEventListener('parlay:viewchange',()=>setTimeout(wireRefresh,0));if(document.readyState==='loading'){window.addEventListener('load',()=>setTimeout(wireRefresh,0),{once:true})}else{setTimeout(wireRefresh,0)}";
     if(!code.includes(oldInit))throw new Error('MLB runtime initialization marker missing');
-    code=code.replace(oldInit,newInit)+'\n//# sourceURL=mlb-live-runtime-v26.js';
+    code=code.replace(oldInit,newInit)+'\n//# sourceURL=mlb-live-runtime-v27.js';
     (0,eval)(code);
   }catch(error){
     console.error('MLB live runtime failed to initialize',error);
