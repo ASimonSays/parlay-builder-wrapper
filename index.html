@@ -207,13 +207,64 @@ WC:{ARG:'Argentina',AUS:'Australia',AUT:'Austria',BEL:'Belgium',BIH:'Bosnia and 
 };
 function teamDisplayName(code,l){return TEAM_NAMES[l]?.[code]||code}
 function gameDisplayName(value,l){const teams=gameTeams(value);return teams.length===2?teamDisplayName(teams[0],l)+' @ '+teamDisplayName(teams[1],l):value}
-function relabelGameSelect(sel,l){if(!sel)return;[...sel.options].forEach(o=>{if(!o.value||o.value===MAN)return;const text=gameDisplayName(o.value,l);if(o.textContent!==text)o.textContent=text})}
-function relabelTeamSelect(sel,l){if(!sel)return;[...sel.options].forEach(o=>{if(!o.value||o.value===MAN)return;const text=teamDisplayName(o.value,l);if(o.textContent!==text)o.textContent=text})}
+function splitGameLabel(text){
+  const value=clean(text);
+  const match=value.match(/^(.*?)(\s+(?:-|—)\s+.+)$/);
+  return match?{base:clean(match[1]),suffix:match[2]}:{base:value,suffix:''};
+}
+function prepareGameOption(option,l){
+  if(!option||!option.value||option.value===MAN)return;
+  if(!option.dataset.fullLabel){
+    const original=splitGameLabel(option.textContent);
+    option.dataset.compactLabel=(original.base||option.value)+original.suffix;
+    option.dataset.fullLabel=gameDisplayName(option.value,l)+original.suffix;
+  }
+}
+function prepareTeamOption(option,l){
+  if(!option||!option.value||option.value===MAN)return;
+  option.dataset.compactLabel=option.value;
+  option.dataset.fullLabel=teamDisplayName(option.value,l);
+}
+function applySelectLabels(sel,l,kind,expanded=false){
+  if(!sel)return;
+  [...sel.options].forEach(option=>{
+    if(!option.value||option.value===MAN)return;
+    if(kind==='game')prepareGameOption(option,l);else prepareTeamOption(option,l);
+    option.textContent=expanded||option.value!==sel.value?option.dataset.fullLabel:option.dataset.compactLabel;
+  });
+}
+function expandReadableSelect(sel){
+  if(!sel)return;
+  sel.dataset.readableExpanded='1';
+  const leg=sel.closest('.leg');
+  const l=leg?legLeague(leg):league();
+  applySelectLabels(sel,l,sel.matches('.team')?'team':'game',true);
+}
+function collapseReadableSelect(sel){
+  if(!sel)return;
+  sel.dataset.readableExpanded='0';
+  const leg=sel.closest('.leg');
+  const l=leg?legLeague(leg):league();
+  applySelectLabels(sel,l,sel.matches('.team')?'team':'game',false);
+}
 function selectMatchingGameForTeam(teamSel){if(!teamSel||!teamSel.value||teamSel.value===MAN)return;const leg=teamSel.closest('.leg');const gameSel=ttype()==='parlay'&&leg?leg.querySelector('.lgame'):$('ticketGame');if(!gameSel)return;const match=[...gameSel.options].find(o=>o.value&&o.value!==MAN&&gameTeams(o.value).includes(teamSel.value));if(!match)return;if(gameSel.value!==match.value){gameSel.value=match.value;gameSel.dispatchEvent(new Event('change',{bubbles:true}))}}
-function refreshReadableOptions(root=document){relabelGameSelect($('ticketGame'),league());document.querySelectorAll('.leg').forEach(d=>{const l=legLeague(d);relabelGameSelect(d.querySelector('.lgame'),l);relabelTeamSelect(d.querySelector('.team'),l)});document.querySelectorAll('.team').forEach(selectMatchingGameForTeam)}
-const readableOptionsObserver=new MutationObserver(()=>requestAnimationFrame(()=>refreshReadableOptions()));
-window.addEventListener('load',()=>{readableOptionsObserver.observe(document.body,{childList:true,subtree:true});requestAnimationFrame(()=>refreshReadableOptions())});
-document.addEventListener('change',e=>{if(e.target.matches('.team'))selectMatchingGameForTeam(e.target)});
+function refreshReadableOptions(){
+  const ticketGameSel=$('ticketGame');
+  applySelectLabels(ticketGameSel,league(),'game',ticketGameSel?.dataset.readableExpanded==='1');
+  document.querySelectorAll('.leg').forEach(d=>{
+    const l=legLeague(d),gameSel=d.querySelector('.lgame'),teamSel=d.querySelector('.team');
+    applySelectLabels(gameSel,l,'game',gameSel?.dataset.readableExpanded==='1');
+    applySelectLabels(teamSel,l,'team',teamSel?.dataset.readableExpanded==='1');
+  });
+  document.querySelectorAll('.team').forEach(selectMatchingGameForTeam);
+}
+const readableOptionsObserver=new MutationObserver(()=>requestAnimationFrame(refreshReadableOptions));
+window.addEventListener('load',()=>{readableOptionsObserver.observe(document.body,{childList:true,subtree:true});requestAnimationFrame(refreshReadableOptions)});
+document.addEventListener('pointerdown',e=>{if(e.target.matches('#ticketGame,.lgame,.team'))expandReadableSelect(e.target)},{capture:true});
+document.addEventListener('touchstart',e=>{if(e.target.matches('#ticketGame,.lgame,.team'))expandReadableSelect(e.target)},{capture:true,passive:true});
+document.addEventListener('focusin',e=>{if(e.target.matches('#ticketGame,.lgame,.team'))expandReadableSelect(e.target)});
+document.addEventListener('change',e=>{if(e.target.matches('.team'))selectMatchingGameForTeam(e.target);if(e.target.matches('#ticketGame,.lgame,.team'))requestAnimationFrame(()=>collapseReadableSelect(e.target))});
+document.addEventListener('focusout',e=>{if(e.target.matches('#ticketGame,.lgame,.team'))collapseReadableSelect(e.target)});
 
 function openCodeSheet(){ $('codeSheet').classList.remove('hide');$('codeSheetBackdrop').classList.remove('hide');$('codeSheetBackdrop').setAttribute('aria-hidden','false');document.body.classList.add('codeSheetOpen') }
 function closeCodeSheet(){ $('codeSheet').classList.add('hide');$('codeSheetBackdrop').classList.add('hide');$('codeSheetBackdrop').setAttribute('aria-hidden','true');document.body.classList.remove('codeSheetOpen') }
