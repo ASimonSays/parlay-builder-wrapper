@@ -2,6 +2,15 @@ const fs = require('fs');
 const path = 'index.html';
 let s = fs.readFileSync(path, 'utf8');
 
+const ticketDateText = '<input id="date" type="text" inputmode="numeric" placeholder="YYYY-MM-DD">';
+const ticketDatePicker = '<input id="date" type="date">';
+const legDateText = '<input class="ldate" type="text" inputmode="numeric" placeholder="YYYY-MM-DD">';
+const legDatePicker = '<input class="ldate" type="date">';
+if (!s.includes(ticketDateText)) throw new Error('ticket date input target not found');
+if (!s.includes(legDateText)) throw new Error('leg date input target not found');
+s = s.replace(ticketDateText, ticketDatePicker);
+s = s.replace(legDateText, legDatePicker);
+
 for (const v of ['V7','V8','V9','V10','V11']) {
   s = s.replace(new RegExp('/\\* BUILDER_REORDER_MODE_' + v + ' \\*/[\\s\\S]*?(?=<\\/style>)','g'), '');
   s = s.replace(new RegExp('/\\* BUILDER_REORDER_MODE_' + v + ' \\*/[\\s\\S]*?(?=<\\/script>)','g'), '');
