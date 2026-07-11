@@ -190,11 +190,12 @@ function autoLabel(d){
   if(t==="ml")return [team,"Moneyline"].filter(Boolean).join(" ");
   if(t==="ml_et")return [team,"Moneyline incl. ET"].filter(Boolean).join(" ");
   if(t==="to_qualify")return [team,"To Qualify"].filter(Boolean).join(" ");
-  if(t==="spread")return [team,target].filter(Boolean).join(" ");
+  const signedTarget=target&&Number(target)>0?"+"+target:target;
+  if(t==="spread")return [team,signedTarget].filter(Boolean).join(" ");
   if(t==="f5_ml")return [team,"F5 Moneyline"].filter(Boolean).join(" ");
-  if(t==="f5_spread")return [team,"F5",target].filter(Boolean).join(" ");
+  if(t==="f5_spread")return [team,"F5",signedTarget].filter(Boolean).join(" ");
   if(t==="h1_ml")return [team,"H1 Moneyline"].filter(Boolean).join(" ");
-  if(t==="h1_spread")return [team,"H1",target].filter(Boolean).join(" ");
+  if(t==="h1_spread")return [team,"H1",signedTarget].filter(Boolean).join(" ");
   if(t==="total_over"||t==="total_under")return target?ou+target:"";
   if(t==="f5_total_over"||t==="f5_total_under")return ["F5",target?ou+target:""].filter(Boolean).join(" ");
   if(t==="h1_total_over"||t==="h1_total_under")return ["H1",target?ou+target:""].filter(Boolean).join(" ");
@@ -206,7 +207,7 @@ function autoLabel(d){
   if(matchMarkets[t])return [target?ou+target:"",matchMarkets[t]].filter(Boolean).join(" ");
   return label[t]||t;
 }
-function displayTitle(){return clean($("odds").value)||"Untitled"}function codeTitle(){let s=clean($("odds").value);return s.startsWith("+")?"＋"+s.slice(1):s||"Untitled"}
+function displayTitle(){return clean($("odds").value)||"Untitled"}function codeTitle(){let s=clean($("odds").value);if(!s)return"Untitled";return $("tracker").value==="worldcup"&&s.startsWith("+")?"＋"+s.slice(1):s}
 function includedLegElements(){let legs=[...document.querySelectorAll(".leg")];return ttype()==="straight"?legs.filter(d=>d.dataset.legId===straightActiveLegId):legs}
 function rawTicket(){let o={title:displayTitle(),type:ttype(),tracker:$("tracker").value,date:date(),legs:[],league:league(),game:ticketGame()};includedLegElements().forEach(d=>{let t=d.querySelector(".ltype").value,leg={label:clean(d.querySelector(".lbl").value)||autoLabel(d),type:t,league:legLeague(d),date:legDate(d),game:legGame(d)};let team=legTeam(d),player=legPlayer(d),target=targetValue(d),half=d.querySelector(".half")?.value;if(team)leg.team=team;if(player)leg.player=player;if(target)leg.target=isNaN(Number(target))?target:Number(target);if(["team_sot_half_over","team_sot_half_under"].includes(t))leg.half=Number(half||1);o.legs.push(leg)});return o}
 function canonicalTicket(){let raw=rawTicket(),out={title:codeTitle(),date:raw.date,type:raw.type,legs:[]};if(raw.type==="sgp"||raw.type==="straight"){if(raw.game)out.game=raw.game}raw.legs.forEach(l=>{let leg={label:l.label,type:l.type};if(raw.type==="parlay"){if(l.game)leg.game=l.game;if(l.date&&l.date!==raw.date)leg.date=l.date}if(l.team)leg.team=l.team;if(l.player)leg.player=l.player;if(l.target!==undefined&&l.target!==null&&l.target!=="")leg.target=l.target;if(l.half!==undefined)leg.half=l.half;out.legs.push(leg)});return out}
