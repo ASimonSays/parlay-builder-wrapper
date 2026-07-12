@@ -1,4 +1,4 @@
-/* GAME DISPLAY FIXES V50 */
+/* GAME DISPLAY FIXES V51 */
 (() => {
   'use strict';
   const MLB_ALIASES={AZ:'ARI',ARI:'ARI',OAK:'ATH',ATH:'ATH',KCR:'KC',KC:'KC',CHW:'CWS',CWS:'CWS',SDP:'SD',SD:'SD',SFG:'SF',SF:'SF',TBR:'TB',TB:'TB',WSN:'WSH',WAS:'WSH',WSH:'WSH'};
@@ -17,8 +17,9 @@
   window.prepareGameOption=function(option,l){
     if(!option||!option.value||option.value===window.MAN||option.value==='__manual__')return;
     const original=window.splitGameLabel?window.splitGameLabel(option.textContent):{base:option.textContent,suffix:''};
-    option.dataset.compactLabel=(original.base||option.value)+original.suffix;
-    option.dataset.fullLabel=window.gameDisplayName(option.value,l)+original.suffix;
+    const nicknameLabel=window.gameDisplayName(option.value,l)+original.suffix;
+    option.dataset.compactLabel=nicknameLabel;
+    option.dataset.fullLabel=nicknameLabel;
   };
 
   const originalSetPairValue=window.setPairValue;
