@@ -1,4 +1,4 @@
-/* TICKET_OUTCOME_V29 */
+/* TICKET_OUTCOME_V30 */
 (() => {
   'use strict';
 
@@ -40,8 +40,11 @@
       if(summary) summary.insertAdjacentElement('beforebegin',badge);
       else card.appendChild(badge);
     }
-    badge.className=`ticketOutcome ${outcome}`;
-    badge.textContent=`TICKET ${outcome}`;
+
+    const wantedClass=`ticketOutcome ${outcome}`;
+    const wantedText=`TICKET ${outcome}`;
+    if(badge.className!==wantedClass) badge.className=wantedClass;
+    if(badge.textContent!==wantedText) badge.textContent=wantedText;
     card.classList.toggle('ticketWon',outcome==='WON');
     card.classList.toggle('ticketLost',outcome==='LOST');
   }
@@ -51,11 +54,24 @@
     document.querySelectorAll('.liveTicketCard').forEach(settleCard);
   }
 
-  const observer=new MutationObserver(()=>requestAnimationFrame(apply));
+  let queued=false;
+  function queueApply(){
+    if(queued) return;
+    queued=true;
+    requestAnimationFrame(()=>{queued=false;apply();});
+  }
+
+  const observer=new MutationObserver(mutations=>{
+    if(mutations.some(m=>m.type==='childList' && [...m.addedNodes].some(n=>n.nodeType===1))) queueApply();
+  });
+
   function start(){
     apply();
-    observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+    observer.observe(document.body,{childList:true,subtree:true});
+    window.addEventListener('parlay:viewchange',queueApply);
+    window.addEventListener('hashchange',queueApply);
   }
+
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true});
   else start();
 })();
