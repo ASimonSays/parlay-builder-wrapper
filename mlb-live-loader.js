@@ -1,8 +1,8 @@
-/* MLB live runtime bootstrap V35 */
+/* MLB live runtime bootstrap V36 */
 (async()=>{
   'use strict';
   try{
-    const response=await fetch('./mlb-live.js?v=35',{cache:'no-store'});
+    const response=await fetch('./mlb-live.js?v=36',{cache:'no-store'});
     if(!response.ok)throw new Error('MLB runtime HTTP '+response.status);
     let code=await response.text();
 
@@ -72,7 +72,7 @@
     if(code.includes(oldOutsUnder))code=code.replace(oldOutsUnder,newOutsUnder);
 
     const summaryCss=".liveSummary{margin:8px 0 2px;font-size:11px;font-weight:850;color:#596372}";
-    const outcomeCss=summaryCss+".ticketOutcome{display:inline-block;margin:8px 0 2px;padding:5px 9px;border-radius:7px;font-size:10px;font-weight:900;letter-spacing:.08em}.ticketOutcome.WON{background:#bfe3bd;color:#154e18}.ticketOutcome.LOST{background:#efc1bc;color:#7a1710}.ticketOutcome.LIVE{background:#f1dda5;color:#674500}.ticketOutcome.PENDING{background:#d7dde6;color:#4f5966}.ticketOutcome.PUSH{background:#d7dde6;color:#4f5966}.ticketOutcome.SUSPENDED{background:#e0cbd9;color:#683451}.liveTicketCard.ticketWon{box-shadow:inset 0 0 0 2px rgba(56,139,63,.22)}.liveTicketCard.ticketLost{box-shadow:inset 0 0 0 2px rgba(173,55,43,.22)}";
+    const outcomeCss=summaryCss+".ticketOutcome{display:inline-block;margin:8px 0 2px;padding:5px 9px;border-radius:7px;font-size:10px;font-weight:900;letter-spacing:.08em}.ticketOutcome.WON{background:#bfe3bd;color:#154e18}.ticketOutcome.LOST{background:#efc1bc;color:#7a1710}.ticketOutcome.LIVE{background:#f1dda5;color:#674500}.ticketOutcome.PENDING{background:#d7dde6;color:#4f5966}.ticketOutcome.PUSH{background:#d7dde6;color:#4f5966}.ticketOutcome.SUSPENDED{background:#e0cbd9;color:#683451}.liveTicketCard.ticketWon{box-shadow:inset 0 0 0 2px rgba(56,139,63,.22)}.liveTicketCard.ticketLost{box-shadow:inset 0 0 0 2px rgba(173,55,43,.22)}.liveLegValue.valueWin{color:#65D26E}.liveLegValue.valueLoss{color:#FF5E6C}.liveLegValue.valuePush{color:#FACC15}.liveLegValue.valueSuspended{color:#F59E0B}.liveLegValue.valuePending{color:#9CA3AF}.liveLegValue.valueTie{color:#7AA7FF}.liveLegValue.valueAhead1{color:#86EFAC}.liveLegValue.valueAhead2{color:#65D26E}.liveLegValue.valueAhead3{color:#22C55E}.liveLegValue.valueBehind1{color:#FACC15}.liveLegValue.valueBehind2{color:#FF8A8A}.liveLegValue.valueBehind3{color:#FF4D5E}";
     if(!code.includes(summaryCss))throw new Error('Ticket outcome CSS marker missing');
     code=code.replace(summaryCss,outcomeCss);
 
@@ -89,6 +89,30 @@
     return'PENDING';
   }
 
+  function scoreValueClass(leg,x,feed){
+    const status=cleanText(x?.status).toUpperCase();
+    if(status==='WIN')return'valueWin';
+    if(status==='LOSS')return'valueLoss';
+    if(status==='VOID')return'valuePush';
+    if(status==='UNAVAILABLE')return'valueSuspended';
+    if(status==='PENDING')return'valuePending';
+    if(status!=='LIVE')return'valuePending';
+    const t=cleanText(leg?.type);
+    let margin=null;
+    if(t==='ml')margin=sideScore(feed,leg.team)-oppScore(feed,leg.team);
+    else if(t==='spread')margin=(sideScore(feed,leg.team)+Number(leg.target||0))-oppScore(feed,leg.team);
+    else if(t==='f5_ml'||t==='f5_spread'){
+      const r=inningRuns(feed,5),side=teamSide(feed,leg.team),mine=side?r[side]:null,theirs=side?(side==='away'?r.home:r.away):null;
+      if(mine!=null&&theirs!=null)margin=mine+Number(t==='f5_spread'?leg.target||0:0)-theirs;
+    }
+    if(margin==null||!Number.isFinite(Number(margin)))return'valuePending';
+    margin=Number(margin);
+    if(margin===0)return'valueTie';
+    const m=Math.abs(margin),scale=2;
+    if(margin>0)return m<scale?'valueAhead1':m<scale*2?'valueAhead2':'valueAhead3';
+    return m<scale?'valueBehind1':m<scale*2?'valueBehind2':'valueBehind3';
+  }
+
   function renderLiveCard(record){
     const t=record.ticket||{},legs=record.__evaluated||[],counts={WIN:0,LOSS:0,LIVE:0,PENDING:0,VOID:0,UNAVAILABLE:0};
     legs.forEach(l=>counts[l.__live?.status]=(counts[l.__live?.status]||0)+1);
@@ -96,14 +120,14 @@
     const feed=legs.find(l=>l.__feed)?.__feed;
     const outcome=ticketState(legs);
     const cardClass=outcome==='WON'?' ticketWon':outcome==='LOST'?' ticketLost':'';
-    return \`<div class="liveTicketCard${'${cardClass}'}"><div class="ticketTop"><div><span class="bookBadge">${'${esc(record.sportsbook||\'Other\')}'}</span><span class="title">${'${esc(t.title||\'Untitled\')}'}</span></div><span class="badge">${'${esc((t.type||\'\').toUpperCase())}'}</span></div><div class="meta">${'${esc([t.game,t.date,feed?gameState(feed):(record.status||\'active\').toUpperCase()].filter(Boolean).join(\' · \'))}'}</div><div class="ticketOutcome ${'${outcome}'}">TICKET ${'${outcome}'}</div><div class="liveSummary">${'${esc(states||\'No legs\')}'}</div>${'${legs.map(l=>{const x=l.__live||result(\'UNAVAILABLE\',null,l.target,\'—\');return `<div class="liveLeg"><div class="liveLegTop"><div><div class="liveLegLabel">${esc(l.label||\'Untitled\')}</div><div class="liveLegMeta">${esc([l.team,l.player,x.meta].filter(Boolean).join(\' · \'))}</div><span class="liveStatus ${esc(x.status)}">${esc(x.status)}</span></div><div class="liveLegValue">${esc(x.display)}</div></div></div>`}).join(\'\')}'}</div>\`;
+    return \`<div class="liveTicketCard${'${cardClass}'}"><div class="ticketTop"><div><span class="bookBadge">${'${esc(record.sportsbook||\'Other\')}'}</span><span class="title">${'${esc(t.title||\'Untitled\')}'}</span></div><span class="badge">${'${esc((t.type||\'\').toUpperCase())}'}</span></div><div class="meta">${'${esc([t.game,t.date,feed?gameState(feed):(record.status||\'active\').toUpperCase()].filter(Boolean).join(\' · \'))}'}</div><div class="ticketOutcome ${'${outcome}'}">TICKET ${'${outcome}'}</div><div class="liveSummary">${'${esc(states||\'No legs\')}'}</div>${'${legs.map(l=>{const x=l.__live||result(\'UNAVAILABLE\',null,l.target,\'—\');const valueClass=scoreValueClass(l,x,l.__feed||feed);return `<div class="liveLeg"><div class="liveLegTop"><div><div class="liveLegLabel">${esc(l.label||\'Untitled\')}</div><div class="liveLegMeta">${esc([l.team,l.player,x.meta].filter(Boolean).join(\' · \'))}</div><span class="liveStatus ${esc(x.status)}">${esc(x.status)}</span></div><div class="liveLegValue ${valueClass}">${esc(x.display)}</div></div></div>`}).join(\'\')}'}</div>\`;
   }`;
     code=code.slice(0,renderStart)+newRenderer+code.slice(renderEnd);
 
     const oldInit="window.addEventListener('load',()=>setTimeout(wireRefresh,0));";
     const newInit="window.__parlayLiveRefresh=()=>{feedCache.clear();document.getElementById('liveRefreshStatus')?.remove();refreshStandaloneLive()};window.addEventListener('parlay:viewchange',()=>setTimeout(wireRefresh,0));if(document.readyState==='loading'){window.addEventListener('load',()=>setTimeout(wireRefresh,0),{once:true})}else{setTimeout(wireRefresh,0)}";
     if(!code.includes(oldInit))throw new Error('MLB runtime initialization marker missing');
-    code=code.replace(oldInit,newInit)+'\n//# sourceURL=mlb-live-runtime-v35.js';
+    code=code.replace(oldInit,newInit)+'\n//# sourceURL=mlb-live-runtime-v36.js';
     (0,eval)(code);
   }catch(error){
     console.error('MLB live runtime failed to initialize',error);
