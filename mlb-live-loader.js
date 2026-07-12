@@ -1,8 +1,8 @@
-/* MLB live runtime bootstrap V36 */
+/* MLB live runtime bootstrap V49 */
 (async()=>{
   'use strict';
   try{
-    const response=await fetch('./mlb-live.js?v=36',{cache:'no-store'});
+    const response=await fetch('./mlb-live.js?v=49',{cache:'no-store'});
     if(!response.ok)throw new Error('MLB runtime HTTP '+response.status);
     let code=await response.text();
 
@@ -11,9 +11,35 @@
     if(!code.includes(oldNorm))throw new Error('MLB name-normalization marker missing');
     code=code.replace(oldNorm,newNorm);
 
+    const oldCodes="function teamCode(team){return cleanText(team).toUpperCase()}\n  function scheduleTeamCode(t){return cleanText(t?.team?.abbreviation||t?.abbreviation||'').toUpperCase()}";
+    const newCodes=`const MLB_CODE_ALIASES={AZ:'ARI',ARI:'ARI',OAK:'ATH',ATH:'ATH',KCR:'KC',KC:'KC',CHW:'CWS',CWS:'CWS',SDP:'SD',SD:'SD',SFG:'SF',SF:'SF',TBR:'TB',TB:'TB',WSN:'WSH',WAS:'WSH',WSH:'WSH'};
+  function normalizedTeamCode(value){const code=cleanText(value).toUpperCase();return MLB_CODE_ALIASES[code]||code}
+  function teamCode(team){return normalizedTeamCode(team)}
+  function scheduleTeamCode(t){return normalizedTeamCode(t?.team?.abbreviation||t?.abbreviation||'')}`;
+    if(!code.includes(oldCodes))throw new Error('MLB team-code marker missing');
+    code=code.replace(oldCodes,newCodes);
+
     const oldStatus="const status=document.createElement('div');status.id='liveRefreshStatus';";
     const newStatus="document.getElementById('liveRefreshStatus')?.remove();const status=document.createElement('div');status.id='liveRefreshStatus';";
     if(code.includes(oldStatus))code=code.replace(oldStatus,newStatus);
+
+    const oldGameState=`function isFinal(feed){const s=feed?.gameData?.status||{};return s.abstractGameState==='Final'||/final|game over|completed/i.test(cleanText(s.detailedState))}
+  function isLive(feed){const s=feed?.gameData?.status||{};return s.abstractGameState==='Live'||/in progress|delayed/i.test(cleanText(s.detailedState))}
+  function hasStarted(feed){return isLive(feed)||isFinal(feed)||Number(feed?.liveData?.linescore?.currentInning||0)>0}
+  function gameState(feed){const l=feed?.liveData?.linescore||{},s=feed?.gameData?.status||{},sc=scores(feed);if(isFinal(feed))return\`Final · \${sc.away}-\${sc.home}\`;if(!hasStarted(feed))return cleanText(s.detailedState)||'Scheduled';const inning=l.currentInningOrdinal||l.currentInning||'',half=l.inningState||'',outs=Number(l.outs||0);return\`\${half} \${inning} · \${outs} out\${outs===1?'':'s'} · \${sc.away}-\${sc.home}\`}`;
+    const newGameState=`function isFinal(feed){const s=feed?.gameData?.status||{};return s.abstractGameState==='Final'||/final|game over|completed/i.test(cleanText(s.detailedState))}
+  function hasGameAction(feed){return Boolean((feed?.liveData?.plays?.allPlays||[]).length)}
+  function isLive(feed){const s=feed?.gameData?.status||{},detail=cleanText(s.detailedState);return s.abstractGameState==='Live'||/in progress/i.test(detail)||(/delayed/i.test(detail)&&hasGameAction(feed))}
+  function hasStarted(feed){return isLive(feed)||isFinal(feed)||hasGameAction(feed)}
+  function scheduledTime(feed){const raw=feed?.gameData?.datetime?.dateTime;if(!raw)return'';const d=new Date(raw);if(Number.isNaN(d.getTime()))return'';return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}
+  function gameState(feed){const l=feed?.liveData?.linescore||{},s=feed?.gameData?.status||{},sc=scores(feed);if(isFinal(feed))return\`Final · \${sc.away}-\${sc.home}\`;if(!hasStarted(feed))return scheduledTime(feed)||cleanText(s.detailedState)||'Scheduled';const inning=l.currentInningOrdinal||l.currentInning||'',half=l.inningState||'',outs=Number(l.outs||0);return\`\${half} \${inning} · \${outs} out\${outs===1?'':'s'} · \${sc.away}-\${sc.home}\`}`;
+    if(!code.includes(oldGameState))throw new Error('MLB game-state marker missing');
+    code=code.replace(oldGameState,newGameState);
+
+    const oldOverUnder="function overUnder(current,target,over,complete,started){if(current==null)return result('UNAVAILABLE',null,target,'—');if(over&&current>target)return result('WIN',current,target,`${current} ${over?'O':'U'} ${target}`);if(!over&&current>=target)return result('LOSS',current,target,`${current} ${over?'O':'U'} ${target}`);if(complete)return result(over?'LOSS':'WIN',current,target,`${current} ${over?'O':'U'} ${target}`);return result(started?'LIVE':'PENDING',current,target,`${current} ${over?'O':'U'} ${target}`)}";
+    const newOverUnder="function overUnder(current,target,over,complete,started){if(current==null)return result('UNAVAILABLE',null,target,'—');const display=`${current} / ${target}`;if(over&&current>target)return result('WIN',current,target,display);if(!over&&current>=target)return result('LOSS',current,target,display);if(complete)return result(over?'LOSS':'WIN',current,target,display);return result(started?'LIVE':'PENDING',current,target,display)}";
+    if(!code.includes(oldOverUnder))throw new Error('MLB over-under marker missing');
+    code=code.replace(oldOverUnder,newOverUnder);
 
     const oldTeam="if(t==='team_total_over'||t==='team_total_under')return overUnder(score,target,t==='team_total_over',final,started);";
     const newTeam="if(t==='team_total_over'||t==='team_total_under'){const r=overUnder(score,target,t==='team_total_over',final,started);r.display=`${score} / ${target}`;return r;}";
@@ -117,17 +143,19 @@
     const t=record.ticket||{},legs=record.__evaluated||[],counts={WIN:0,LOSS:0,LIVE:0,PENDING:0,VOID:0,UNAVAILABLE:0};
     legs.forEach(l=>counts[l.__live?.status]=(counts[l.__live?.status]||0)+1);
     const states=Object.entries(counts).filter(([,n])=>n).map(([k,n])=>\`${'${n}'} ${'${k}'}\`).join(' · ');
-    const feed=legs.find(l=>l.__feed)?.__feed;
+    const firstFeed=legs.find(l=>l.__feed)?.__feed;
     const outcome=ticketState(legs);
     const cardClass=outcome==='WON'?' ticketWon':outcome==='LOST'?' ticketLost':'';
-    return \`<div class="liveTicketCard${'${cardClass}'}"><div class="ticketTop"><div><span class="bookBadge">${'${esc(record.sportsbook||\'Other\')}'}</span><span class="title">${'${esc(t.title||\'Untitled\')}'}</span></div><span class="badge">${'${esc((t.type||\'\').toUpperCase())}'}</span></div><div class="meta">${'${esc([t.game,t.date,feed?gameState(feed):(record.status||\'active\').toUpperCase()].filter(Boolean).join(\' · \'))}'}</div><div class="ticketOutcome ${'${outcome}'}">TICKET ${'${outcome}'}</div><div class="liveSummary">${'${esc(states||\'No legs\')}'}</div>${'${legs.map(l=>{const x=l.__live||result(\'UNAVAILABLE\',null,l.target,\'—\');const valueClass=scoreValueClass(l,x,l.__feed||feed);return `<div class="liveLeg"><div class="liveLegTop"><div><div class="liveLegLabel">${esc(l.label||\'Untitled\')}</div><div class="liveLegMeta">${esc([l.team,l.player,x.meta].filter(Boolean).join(\' · \'))}</div><span class="liveStatus ${esc(x.status)}">${esc(x.status)}</span></div><div class="liveLegValue ${valueClass}">${esc(x.display)}</div></div></div>`}).join(\'\')}'}</div>\`;
+    const isParlay=cleanText(t.type).toLowerCase()==='parlay';
+    const topMeta=isParlay?[t.date]:[t.game,t.date,firstFeed?gameState(firstFeed):(record.status||'active').toUpperCase()];
+    return \`<div class="liveTicketCard${'${cardClass}'}"><div class="ticketTop"><div><span class="bookBadge">${'${esc(record.sportsbook||\'Other\')}'}</span><span class="title">${'${esc(t.title||\'Untitled\')}'}</span></div><span class="badge">${'${esc((t.type||\'\').toUpperCase())}'}</span></div><div class="meta">${'${esc(topMeta.filter(Boolean).join(\' · \'))}'}</div><div class="ticketOutcome ${'${outcome}'}">TICKET ${'${outcome}'}</div><div class="liveSummary">${'${esc(states||\'No legs\')}'}</div>${'${legs.map(l=>{const x=l.__live||result(\'UNAVAILABLE\',null,l.target,\'—\');const legFeed=l.__feed||null;const valueClass=scoreValueClass(l,x,legFeed||firstFeed);const game=cleanText(l.game||t.game);const legMeta=isParlay?[game,legFeed?gameState(legFeed):x.meta,l.team,l.player]:[l.team,l.player,x.meta];return `<div class="liveLeg"><div class="liveLegTop"><div><div class="liveLegLabel">${esc(l.label||\'Untitled\')}</div><div class="liveLegMeta">${esc(legMeta.filter(Boolean).join(\' · \'))}</div><span class="liveStatus ${esc(x.status)}">${esc(x.status)}</span></div><div class="liveLegValue ${valueClass}">${esc(x.display)}</div></div></div>`}).join(\'\')}'}</div>\`;
   }`;
     code=code.slice(0,renderStart)+newRenderer+code.slice(renderEnd);
 
     const oldInit="window.addEventListener('load',()=>setTimeout(wireRefresh,0));";
     const newInit="window.__parlayLiveRefresh=()=>{feedCache.clear();document.getElementById('liveRefreshStatus')?.remove();refreshStandaloneLive()};window.addEventListener('parlay:viewchange',()=>setTimeout(wireRefresh,0));if(document.readyState==='loading'){window.addEventListener('load',()=>setTimeout(wireRefresh,0),{once:true})}else{setTimeout(wireRefresh,0)}";
     if(!code.includes(oldInit))throw new Error('MLB runtime initialization marker missing');
-    code=code.replace(oldInit,newInit)+'\n//# sourceURL=mlb-live-runtime-v36.js';
+    code=code.replace(oldInit,newInit)+'\n//# sourceURL=mlb-live-runtime-v49.js';
     (0,eval)(code);
   }catch(error){
     console.error('MLB live runtime failed to initialize',error);
