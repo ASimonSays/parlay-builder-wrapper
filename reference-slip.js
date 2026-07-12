@@ -1,4 +1,4 @@
-/* REFERENCE_SLIP_V48 */
+/* REFERENCE_SLIP_V49 */
 (() => {
   'use strict';
 
@@ -7,6 +7,8 @@
   let docked=false;
   let dockPosition='bottom';
   let gesture=null;
+  let floatFrame=0;
+  let floatVisible=false;
 
   const css=`
     .referenceSlipCard{position:relative}
@@ -16,15 +18,14 @@
     .referenceSlipActions button{width:auto;min-width:0;padding:8px 10px}
     .referenceSlipInput{display:none}
     .referenceSlipEmpty{margin-top:10px;padding:18px 12px;border:1px dashed rgba(70,80,95,.34);border-radius:10px;text-align:center;color:#657080;font-size:12px}
-    .referenceSlipStage{margin-top:10px;border-radius:11px;overflow:hidden;background:#111;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+    .referenceSlipStage{margin-top:10px;border-radius:11px;overflow:hidden;background:#111;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);contain:paint}
     .referenceSlipStage img{display:block;width:100%;max-height:58vh;object-fit:contain;background:#111}
-    .referenceSlipCard.isCollapsed .referenceSlipStage{display:none}
-    .referenceSlipCard.isCollapsed .referenceSlipEmpty{display:none}
+    .referenceSlipCard.isCollapsed .referenceSlipStage,.referenceSlipCard.isCollapsed .referenceSlipEmpty{display:none}
     .referenceSlipName{margin-top:7px;color:#687383;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .referenceSlipFloat{position:fixed;z-index:145;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:92px;height:92px;padding:0;border:2px solid rgba(255,255,255,.9);border-radius:12px;overflow:hidden;background:#111;box-shadow:0 8px 24px rgba(0,0,0,.38);touch-action:none}
+    .referenceSlipFloat{position:fixed;z-index:145;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:92px;height:92px;padding:0;border:2px solid rgba(255,255,255,.9);border-radius:12px;overflow:hidden;background:#111;box-shadow:0 8px 24px rgba(0,0,0,.38);touch-action:none;contain:layout paint}
     .referenceSlipFloat img{display:block;width:100%;height:100%;object-fit:cover}
     .referenceSlipFloatLabel{position:absolute;left:0;right:0;bottom:0;padding:4px 3px;background:rgba(0,0,0,.72);color:#fff;font-size:8px;font-weight:900;letter-spacing:.04em;text-align:center}
-    .referenceSlipFloat.isDocked{left:10px;right:10px;width:auto;height:min(38vh,340px);border-radius:14px;display:block;overflow:hidden;touch-action:none}
+    .referenceSlipFloat.isDocked{left:10px;right:10px;width:auto;height:min(38vh,340px);border-radius:14px;display:block;overflow:hidden}
     .referenceSlipFloat.isDocked.dockTop{top:calc(8px + env(safe-area-inset-top));bottom:auto}
     .referenceSlipFloat.isDocked.dockBottom{top:auto;bottom:calc(8px + env(safe-area-inset-bottom))}
     .referenceSlipFloat.isDocked img{object-fit:contain;background:#111}
@@ -50,6 +51,15 @@
     return Boolean(odds&&odds.offsetParent!==null);
   }
 
+  function setFloatVisible(show){
+    const floater=document.getElementById('referenceSlipFloat');
+    if(!floater)return;
+    show=Boolean(show);
+    if(show===floatVisible)return;
+    floatVisible=show;
+    floater.classList.toggle('hide',!show);
+  }
+
   function applyDockState(){
     const floater=document.getElementById('referenceSlipFloat');
     if(!floater)return;
@@ -60,63 +70,52 @@
     if(label)label.textContent=docked?'TAP TO MINIMIZE · SWIPE UP/DOWN TO MOVE':'OPEN SLIP';
   }
 
-  function updateFloat(){
+  function updateFloatNow(){
     const card=document.getElementById('referenceSlipCard');
-    const floater=document.getElementById('referenceSlipFloat');
-    if(!card||!floater||!objectUrl||!builderVisible()){floater?.classList.add('hide');return}
-    if(docked){floater.classList.remove('hide');applyDockState();return}
+    if(!card||!objectUrl||!builderVisible()){setFloatVisible(false);return}
+    if(docked){applyDockState();setFloatVisible(true);return}
     const rect=card.getBoundingClientRect();
     const offscreen=rect.bottom<70||rect.top>window.innerHeight-30;
-    floater.classList.toggle('hide',!offscreen);
     applyDockState();
+    setFloatVisible(offscreen);
   }
 
-  function expandDock(){
-    if(!objectUrl)return;
-    docked=true;
-    applyDockState();
-    updateFloat();
+  function scheduleFloatUpdate(){
+    if(floatFrame)return;
+    floatFrame=requestAnimationFrame(()=>{floatFrame=0;updateFloatNow()});
   }
 
-  function minimizeDock(){
-    docked=false;
-    applyDockState();
-    updateFloat();
-  }
-
-  function moveDock(position){
-    dockPosition=position==='top'?'top':'bottom';
-    docked=true;
-    applyDockState();
-  }
+  function expandDock(){if(!objectUrl)return;docked=true;applyDockState();scheduleFloatUpdate()}
+  function minimizeDock(){docked=false;applyDockState();scheduleFloatUpdate()}
+  function moveDock(position){dockPosition=position==='top'?'top':'bottom';docked=true;applyDockState();setFloatVisible(true)}
 
   function openLarge(){
     if(!objectUrl)return;
-    document.getElementById('referenceSlipOverlayImg').src=objectUrl;
-    document.getElementById('referenceSlipOverlay').classList.remove('hide');
+    const image=document.getElementById('referenceSlipOverlayImg');
+    if(image)image.src=objectUrl;
+    document.getElementById('referenceSlipOverlay')?.classList.remove('hide');
     document.body.classList.add('referenceSlipOpen');
   }
 
   function closeLarge(){
     document.getElementById('referenceSlipOverlay')?.classList.add('hide');
     document.body.classList.remove('referenceSlipOpen');
+    const image=document.getElementById('referenceSlipOverlayImg');
+    if(image)image.removeAttribute('src');
   }
 
   function clearSlip(){
     if(objectUrl)URL.revokeObjectURL(objectUrl);
-    objectUrl='';
-    collapsed=false;
-    docked=false;
-    dockPosition='bottom';
-    const card=document.getElementById('referenceSlipCard');
+    objectUrl='';collapsed=false;docked=false;dockPosition='bottom';floatVisible=false;
     const input=document.getElementById('referenceSlipInput');
     if(input)input.value='';
-    card?.classList.remove('isCollapsed');
+    document.getElementById('referenceSlipCard')?.classList.remove('isCollapsed');
     document.getElementById('referenceSlipStage')?.classList.add('hide');
     document.getElementById('referenceSlipLoadedActions')?.classList.add('hide');
     document.getElementById('referenceSlipEmpty')?.classList.remove('hide');
     const name=document.getElementById('referenceSlipName');if(name)name.textContent='';
-    const img=document.getElementById('referenceSlipImage');if(img)img.removeAttribute('src');
+    const main=document.getElementById('referenceSlipImage');if(main)main.removeAttribute('src');
+    const floating=document.getElementById('referenceSlipFloatImage');if(floating)floating.removeAttribute('src');
     document.getElementById('referenceSlipFloat')?.classList.add('hide');
     applyDockState();
     closeLarge();
@@ -127,20 +126,17 @@
     if(!file.type.startsWith('image/')){alert('Choose an image screenshot.');return}
     if(objectUrl)URL.revokeObjectURL(objectUrl);
     objectUrl=URL.createObjectURL(file);
-    collapsed=false;
-    docked=false;
-    dockPosition='bottom';
-    const card=document.getElementById('referenceSlipCard');
-    card?.classList.remove('isCollapsed');
-    const image=document.getElementById('referenceSlipImage');image.src=objectUrl;
+    collapsed=false;docked=false;dockPosition='bottom';floatVisible=false;
+    document.getElementById('referenceSlipCard')?.classList.remove('isCollapsed');
+    document.getElementById('referenceSlipImage').src=objectUrl;
     document.getElementById('referenceSlipFloatImage').src=objectUrl;
-    document.getElementById('referenceSlipEmpty').classList.add('hide');
-    document.getElementById('referenceSlipStage').classList.remove('hide');
-    document.getElementById('referenceSlipLoadedActions').classList.remove('hide');
+    document.getElementById('referenceSlipEmpty')?.classList.add('hide');
+    document.getElementById('referenceSlipStage')?.classList.remove('hide');
+    document.getElementById('referenceSlipLoadedActions')?.classList.remove('hide');
     document.getElementById('referenceSlipName').textContent=file.name||'Reference screenshot';
     document.getElementById('referenceSlipCollapse').textContent='Collapse';
     applyDockState();
-    setTimeout(updateFloat,0);
+    scheduleFloatUpdate();
   }
 
   function toggleCollapse(){
@@ -148,7 +144,7 @@
     collapsed=!collapsed;
     document.getElementById('referenceSlipCard')?.classList.toggle('isCollapsed',collapsed);
     document.getElementById('referenceSlipCollapse').textContent=collapsed?'Expand':'Collapse';
-    updateFloat();
+    scheduleFloatUpdate();
   }
 
   function beginGesture(e){
@@ -156,29 +152,19 @@
     gesture={pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};
     e.currentTarget.setPointerCapture?.(e.pointerId);
   }
-
   function moveGesture(e){
     if(!gesture||e.pointerId!==gesture.pointerId)return;
     gesture.lastX=e.clientX;gesture.lastY=e.clientY;
     if(Math.hypot(e.clientX-gesture.startX,e.clientY-gesture.startY)>10)gesture.moved=true;
     if(gesture.moved)e.preventDefault();
   }
-
   function endGesture(e){
     if(!gesture||e.pointerId!==gesture.pointerId)return;
-    const dx=gesture.lastX-gesture.startX,dy=gesture.lastY-gesture.startY;
-    const moved=gesture.moved;
+    const dx=gesture.lastX-gesture.startX,dy=gesture.lastY-gesture.startY,moved=gesture.moved;
     gesture=null;
-    if(moved&&Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>=38){
-      moveDock(dy<0?'top':'bottom');
-      return;
-    }
-    if(!moved){
-      if(docked)minimizeDock();
-      else expandDock();
-    }
+    if(moved&&Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>=38){moveDock(dy<0?'top':'bottom');return}
+    if(!moved){if(docked)minimizeDock();else expandDock()}
   }
-
   function cancelGesture(){gesture=null}
 
   function install(){
@@ -190,7 +176,8 @@
 
     const card=document.createElement('section');
     card.id='referenceSlipCard';
-    card.className='card referenceSlipCard';
+    card.className='card builderOnly referenceSlipCard';
+    if(!builderVisible())card.classList.add('hide');
     card.innerHTML=`
       <div class="referenceSlipHead">
         <div class="referenceSlipTitle">REFERENCE SLIP</div>
@@ -199,7 +186,6 @@
           <span id="referenceSlipLoadedActions" class="referenceSlipActions hide">
             <button id="referenceSlipCollapse" class="ghost" type="button">Collapse</button>
             <button id="referenceSlipLarge" class="ghost" type="button">Open Large</button>
-            <button id="referenceSlipReplace" class="ghost" type="button">Replace</button>
             <button id="referenceSlipClear" class="ghost" type="button">Clear</button>
           </span>
         </div>
@@ -225,7 +211,6 @@
 
     const input=document.getElementById('referenceSlipInput');
     document.getElementById('referenceSlipUpload').onclick=()=>input.click();
-    document.getElementById('referenceSlipReplace').onclick=()=>input.click();
     document.getElementById('referenceSlipCollapse').onclick=toggleCollapse;
     document.getElementById('referenceSlipLarge').onclick=openLarge;
     document.getElementById('referenceSlipClear').onclick=clearSlip;
@@ -236,17 +221,15 @@
     overlay.addEventListener('click',e=>{if(e.target===overlay)closeLarge()});
     document.getElementById('referenceSlipClose').onclick=closeLarge;
     input.addEventListener('change',()=>loadFile(input.files?.[0]));
-    window.addEventListener('scroll',updateFloat,{passive:true});
-    window.addEventListener('resize',updateFloat,{passive:true});
-    window.addEventListener('hashchange',()=>setTimeout(updateFloat,0));
+    window.addEventListener('scroll',scheduleFloatUpdate,{passive:true});
+    window.addEventListener('resize',scheduleFloatUpdate,{passive:true});
+    window.addEventListener('hashchange',()=>setTimeout(scheduleFloatUpdate,0));
     return true;
   }
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{
+  const start=()=>{
     if(install())return;
     let tries=0;const timer=setInterval(()=>{if(install()||++tries>40)clearInterval(timer)},250);
-  },{once:true});
-  else if(!install()){
-    let tries=0;const timer=setInterval(()=>{if(install()||++tries>40)clearInterval(timer)},250);
-  }
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
