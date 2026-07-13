@@ -1,4 +1,4 @@
-/* TICKET DASHBOARD DETAILS V70 */
+/* TICKET DASHBOARD DETAILS V71 */
 (() => {
   'use strict';
   const KEY='parlayTracker.savedTickets.v1';
@@ -31,11 +31,11 @@
       .dashboardLegStatus.WIN{background:#bfe3bd;color:#154e18}.dashboardLegStatus.LOSS{background:#efc1bc;color:#7a1710}.dashboardLegStatus.LIVE{background:#f1dda5;color:#674500}.dashboardLegStatus.PENDING,.dashboardLegStatus.PUSH{background:#d7dde6;color:#4f5966}.dashboardLegStatus.SUSPENDED,.dashboardLegStatus.UNAVAILABLE{background:#f4c27a;color:#6b3b00}
       .dashboardLegValue.valueWin{color:#278c31}.dashboardLegValue.valueLoss{color:#c72f3e}.dashboardLegValue.valuePush{color:#9b7600}.dashboardLegValue.valueSuspended{color:#a75e00}.dashboardLegValue.valuePending{color:#687383}
       .dashboardDetailsMessage{padding:10px 2px;color:#596372;font-size:12px;font-weight:750}
-      .dashboardToolbarV55{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:7px;align-items:center;margin:0 0 10px}
-      .dashboardToolbarV55 button{width:auto;min-width:0;padding:8px 10px;font-size:10px;white-space:nowrap}
-      .dashboardToolbarStatus{grid-column:1;grid-row:1;justify-self:start;min-width:0;font-size:10px;font-weight:800;color:#596372;white-space:nowrap}
+      .dashboardToolbarV55{display:grid;grid-template-columns:minmax(0,1fr) 70px 84px 58px;gap:6px;align-items:center;margin:0 0 10px}
+      .dashboardToolbarV55 button{width:100%;min-width:0;padding:8px 5px;font-size:9px;white-space:nowrap}
+      .dashboardToolbarStatus{grid-column:1;grid-row:1;justify-self:stretch;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:9px;font-weight:800;color:#596372;white-space:nowrap}
       #refreshTicketsBtn{grid-column:2;grid-row:1}#toggleAllTicketsBtn{grid-column:3;grid-row:1}#ticketSelectModeBtn{grid-column:4;grid-row:1}
-      #deleteSelectedTicketsBtn{grid-column:1/-1;grid-row:2;justify-self:end}
+      #deleteSelectedTicketsBtn{grid-column:1/-1;grid-row:2;justify-self:end;width:auto}
       .ticketSelectBox{display:none;position:absolute;left:8px;top:9px;width:22px;height:22px;z-index:3;accent-color:#b27b24}
       body.ticketSelectMode .ticketSelectBox{display:block}body.ticketSelectMode .savedTicket{padding-left:38px}.deleteSelectedBtn.hide{display:none!important}
       #standaloneView .liveGrid{gap:6px!important}#standaloneView .liveTicketCard{padding:8px 10px!important;margin-bottom:6px!important;border-radius:8px!important}
@@ -45,7 +45,7 @@
       #standaloneView .liveLegMeta{margin-top:2px!important;font-size:11px!important;font-weight:800!important;line-height:1.2!important;color:#4f5b69!important;letter-spacing:.005em!important}
       #standaloneView .liveLegValue{font-size:13px!important;min-width:48px!important}#standaloneView .liveStatus{margin-top:3px!important;padding:3px 6px!important;font-size:8px!important}
       #standaloneView .liveLegTop{gap:10px!important}#standaloneView .standaloneTools{margin-bottom:6px!important}#standaloneView .dashboardHeader{margin-bottom:6px!important}
-      @media(max-width:390px){.dashboardToolbarV55{gap:5px}.dashboardToolbarV55 button{padding:7px 7px;font-size:9px}.dashboardToolbarStatus{font-size:9px}}
+      @media(max-width:390px){.dashboardToolbarV55{grid-template-columns:minmax(0,1fr) 64px 80px 54px;gap:5px}.dashboardToolbarV55 button{padding:7px 3px;font-size:8px}.dashboardToolbarStatus{font-size:8px}}
       @media(min-width:600px){.dashboardLegLabel{font-size:15px}.dashboardLegMeta{font-size:13px}#standaloneView .liveLegLabel{font-size:15px!important}#standaloneView .liveLegMeta{font-size:12px!important}}
     `;
     document.head.appendChild(style);
@@ -59,6 +59,11 @@
   async function evaluateRecord(record){const S=window.ParlayTrackerSources,E=window.ParlayTrackerEvaluator;if(!S||!E)throw new Error('Tracker engine unavailable');const games=await S.fetchScoreboards(datesFor(record));return E.evaluateRecord(record,games)}
   async function loadDetails(id,panel,reset=true){if(loadingIds.has(id))return;const record=load().find(r=>r.id===id);if(!record)return;loadingIds.add(id);panel.innerHTML='<div class="dashboardDetailsMessage">Refreshing leg status…</div>';try{if(reset)window.ParlayTrackerSources?.resetTrackingCaches?.();const evaluated=await evaluateRecord(record);if(expandedIds.has(id))panel.innerHTML=detailsHtml(evaluated)}catch(error){panel.innerHTML=`<div class="dashboardDetailsMessage">Unable to refresh leg status: ${esc(error?.message||error)}</div>`}finally{loadingIds.delete(id)}}
 
+  function clearOpenTicketHint(){
+    const status=document.querySelector('.dashboardToolbarStatus');
+    if(status&&/^Open(?: a)? ticket/i.test(String(status.textContent||'').trim()))status.textContent='';
+  }
+
   function updateExpandAllButton(){
     const button=document.getElementById('toggleAllTicketsBtn');
     if(!button)return;
@@ -66,6 +71,7 @@
     button.textContent=anyOpen?'Collapse All':'Expand All';
     button.setAttribute('aria-label',anyOpen?'Collapse all ticket legs':'Expand all ticket legs');
     button.setAttribute('aria-pressed',String(anyOpen));
+    if(anyOpen)clearOpenTicketHint();
   }
 
   function toggle(id,button,panel){
@@ -80,7 +86,7 @@
 
   function setAllExpanded(open){
     const cards=[...document.querySelectorAll('#ticketList .savedTicket')];
-    if(open)window.ParlayTrackerSources?.resetTrackingCaches?.();
+    if(open){clearOpenTicketHint();window.ParlayTrackerSources?.resetTrackingCaches?.()}
     cards.forEach(card=>{
       const id=card.dataset.ticketId,button=card.querySelector('.ticketExpandBtn'),panel=card.querySelector('.savedTicketDetails');
       if(!id||!button||!panel)return;
@@ -128,7 +134,7 @@
     updateSelectionToolbar();updateExpandAllButton();
   }
 
-  function wrapDashboard(){const original=window.renderTicketDashboard;if(typeof original!=='function'||original.__detailsV70Wrapped)return;const wrapped=function(...args){const out=original.apply(this,args);requestAnimationFrame(decorate);return out};wrapped.__detailsV70Wrapped=true;window.renderTicketDashboard=wrapped}
+  function wrapDashboard(){const original=window.renderTicketDashboard;if(typeof original!=='function'||original.__detailsV71Wrapped)return;const wrapped=function(...args){const out=original.apply(this,args);requestAnimationFrame(decorate);return out};wrapped.__detailsV71Wrapped=true;window.renderTicketDashboard=wrapped}
   function install(){wrapDashboard();decorate()}
   install();window.addEventListener('load',()=>{wrapDashboard();decorate()},{once:true});document.addEventListener('click',event=>{if(event.target.closest?.('#ticketsTab'))setTimeout(decorate,0)},true);
 })();
