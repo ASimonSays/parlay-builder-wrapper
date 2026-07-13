@@ -1,4 +1,4 @@
-/* TICKET DASHBOARD DETAILS V55 */
+/* TICKET DASHBOARD DETAILS V60 */
 (() => {
   'use strict';
   const KEY='parlayTracker.savedTickets.v1';
@@ -41,8 +41,6 @@
       body.ticketSelectMode .ticketSelectBox{display:block}
       body.ticketSelectMode .savedTicket{padding-left:38px}
       .deleteSelectedBtn.hide{display:none!important}
-
-      /* Dense standalone ticket view: retain definition without wasting vertical space. */
       #standaloneView .liveGrid{gap:6px!important}
       #standaloneView .liveTicketCard{padding:8px 10px!important;margin-bottom:6px!important;border-radius:8px!important}
       #standaloneView .ticketTop{gap:6px!important}
@@ -65,131 +63,32 @@
   }
 
   function datesFor(record){const out=[];const t=record?.ticket||{};if(t.date)out.push(t.date);for(const leg of t.legs||[])if(leg.date)out.push(leg.date);return [...new Set(out)]}
-
   function detailsHtml(record){
-    const C=window.ParlayTrackerCore;
-    const t=record.ticket||{};
-    return (record.__evaluated||[]).map(leg=>{
-      const x=leg.__live||C.statusObj('pending','');
-      const game=leg.__game;
-      const meta=t.type==='sgp'?[game?C.baseGameMeta(game):'']:[C.legGame(t,leg),game?C.baseGameMeta(game):''];
-      return `<div class="dashboardLeg"><div><div class="dashboardLegLabel">${esc(leg.label||'Untitled')}</div><div class="dashboardLegMeta">${esc(meta.filter(Boolean).join(' · '))}</div></div><div class="dashboardLegRight"><div class="dashboardLegValue ${esc(x.valueClass||valueClass(x.state))}">${esc(x.value||'')}</div><span class="dashboardLegStatus ${stateClass(x.state)}">${esc(stateClass(x.state))}</span></div></div>`;
-    }).join('')||'<div class="dashboardDetailsMessage">No legs in this ticket.</div>';
+    const C=window.ParlayTrackerCore,t=record.ticket||{};
+    return (record.__evaluated||[]).map(leg=>{const x=leg.__live||C.statusObj('pending',''),game=leg.__game;const meta=t.type==='sgp'?[game?C.baseGameMeta(game):'']:[C.legGame(t,leg),game?C.baseGameMeta(game):''];return `<div class="dashboardLeg"><div><div class="dashboardLegLabel">${esc(leg.label||'Untitled')}</div><div class="dashboardLegMeta">${esc(meta.filter(Boolean).join(' · '))}</div></div><div class="dashboardLegRight"><div class="dashboardLegValue ${esc(x.valueClass||valueClass(x.state))}">${esc(x.value||'')}</div><span class="dashboardLegStatus ${stateClass(x.state)}">${esc(stateClass(x.state))}</span></div></div>`}).join('')||'<div class="dashboardDetailsMessage">No legs in this ticket.</div>';
   }
+  async function evaluateRecord(record){const S=window.ParlayTrackerSources,E=window.ParlayTrackerEvaluator;if(!S||!E)throw new Error('Tracker engine unavailable');const games=await S.fetchScoreboards(datesFor(record));return E.evaluateRecord(record,games)}
+  async function loadDetails(id,panel,reset=true){if(loadingIds.has(id))return;const record=load().find(r=>r.id===id);if(!record)return;loadingIds.add(id);panel.innerHTML='<div class="dashboardDetailsMessage">Refreshing leg status…</div>';try{if(reset)window.ParlayTrackerSources?.resetTrackingCaches?.();const evaluated=await evaluateRecord(record);if(expandedIds.has(id))panel.innerHTML=detailsHtml(evaluated)}catch(error){panel.innerHTML=`<div class="dashboardDetailsMessage">Unable to refresh leg status: ${esc(error?.message||error)}</div>`}finally{loadingIds.delete(id)}}
+  function toggle(id,button,panel){const open=!expandedIds.has(id);if(open)expandedIds.add(id);else expandedIds.delete(id);button.setAttribute('aria-expanded',String(open));panel.classList.toggle('hide',!open);if(open)loadDetails(id,panel,true)}
 
-  async function evaluateRecord(record){
-    const S=window.ParlayTrackerSources,E=window.ParlayTrackerEvaluator;
-    if(!S||!E)throw new Error('Tracker engine unavailable');
-    const games=await S.fetchScoreboards(datesFor(record));
-    return E.evaluateRecord(record,games);
-  }
-
-  async function loadDetails(id,panel,reset=true){
-    if(loadingIds.has(id))return;
-    const record=load().find(r=>r.id===id);
-    if(!record)return;
-    loadingIds.add(id);
-    panel.innerHTML='<div class="dashboardDetailsMessage">Refreshing leg status…</div>';
-    try{
-      if(reset)window.ParlayTrackerSources?.resetTrackingCaches?.();
-      const evaluated=await evaluateRecord(record);
-      if(expandedIds.has(id))panel.innerHTML=detailsHtml(evaluated);
-    }catch(error){panel.innerHTML=`<div class="dashboardDetailsMessage">Unable to refresh leg status: ${esc(error?.message||error)}</div>`}
-    finally{loadingIds.delete(id)}
-  }
-
-  async function refreshExpanded(){
-    const status=document.querySelector('.dashboardToolbarStatus');
-    const ids=[...expandedIds];
-    if(!ids.length){if(status)status.textContent='Open a ticket to refresh its legs.';return}
-    if(status)status.textContent='Refreshing…';
-    window.ParlayTrackerSources?.resetTrackingCaches?.();
-    await Promise.all(ids.map(id=>{const panel=document.querySelector(`.savedTicket[data-ticket-id="${CSS.escape(id)}"] .savedTicketDetails`);return panel?loadDetails(id,panel,false):null}));
-    if(status)status.textContent=`Updated ${new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`;
-  }
-
-  function toggle(id,button,panel){
-    const open=!expandedIds.has(id);
-    if(open)expandedIds.add(id);else expandedIds.delete(id);
-    button.setAttribute('aria-expanded',String(open));
-    panel.classList.toggle('hide',!open);
-    if(open)loadDetails(id,panel,true);
-  }
-
-  function updateSelectionToolbar(){
-    document.body.classList.toggle('ticketSelectMode',selectMode);
-    const selectBtn=document.getElementById('ticketSelectModeBtn');
-    const deleteBtn=document.getElementById('deleteSelectedTicketsBtn');
-    if(selectBtn)selectBtn.textContent=selectMode?'Cancel':'Select';
-    if(deleteBtn){deleteBtn.classList.toggle('hide',!selectMode);deleteBtn.textContent=selectedIds.size?`Delete Selected (${selectedIds.size})`:'Delete Selected';deleteBtn.disabled=selectedIds.size===0}
-    document.querySelectorAll('.ticketSelectBox').forEach(box=>{box.checked=selectedIds.has(box.value)});
-  }
-
-  function deleteSelected(){
-    if(!selectedIds.size)return;
-    const count=selectedIds.size;
-    if(!confirm(`Delete ${count} selected ticket${count===1?'':'s'}?`))return;
-    const remaining=load().filter(r=>!selectedIds.has(r.id));
-    selectedIds.forEach(id=>expandedIds.delete(id));
-    selectedIds.clear();
-    selectMode=false;
-    store(remaining);
-    window.renderTicketDashboard?.();
-    updateSelectionToolbar();
-  }
+  function updateSelectionToolbar(){document.body.classList.toggle('ticketSelectMode',selectMode);const selectBtn=document.getElementById('ticketSelectModeBtn');const deleteBtn=document.getElementById('deleteSelectedTicketsBtn');if(selectBtn)selectBtn.textContent=selectMode?'Cancel':'Select';if(deleteBtn){deleteBtn.classList.toggle('hide',!selectMode);deleteBtn.textContent=selectedIds.size?`Delete Selected (${selectedIds.size})`:'Delete Selected';deleteBtn.disabled=selectedIds.size===0}document.querySelectorAll('.ticketSelectBox').forEach(box=>{box.checked=selectedIds.has(box.value)})}
+  function deleteSelected(){if(!selectedIds.size)return;const count=selectedIds.size;if(!confirm(`Delete ${count} selected ticket${count===1?'':'s'}?`))return;const remaining=load().filter(r=>!selectedIds.has(r.id));selectedIds.forEach(id=>expandedIds.delete(id));selectedIds.clear();selectMode=false;store(remaining);window.renderTicketDashboard?.();updateSelectionToolbar()}
 
   function ensureToolbar(){
     const dashboard=document.getElementById('dashboardView');
     if(!dashboard||document.getElementById('dashboardToolbarV55'))return;
     const toolbar=document.createElement('div');
-    toolbar.id='dashboardToolbarV55';
-    toolbar.className='dashboardToolbarV55';
+    toolbar.id='dashboardToolbarV55';toolbar.className='dashboardToolbarV55';
     toolbar.innerHTML='<button id="refreshTicketsBtn" class="ghost" type="button">Refresh</button><button id="ticketSelectModeBtn" class="ghost" type="button">Select</button><button id="deleteSelectedTicketsBtn" class="deleteSelectedBtn hide" type="button">Delete Selected</button><span class="dashboardToolbarStatus"></span>';
-    const header=dashboard.querySelector('.dashboardHeader');
-    if(header)header.insertAdjacentElement('afterend',toolbar);else dashboard.prepend(toolbar);
-    toolbar.querySelector('#refreshTicketsBtn').addEventListener('click',refreshExpanded);
+    const header=dashboard.querySelector('.dashboardHeader');if(header)header.insertAdjacentElement('afterend',toolbar);else dashboard.prepend(toolbar);
+    toolbar.querySelector('#refreshTicketsBtn').onclick=()=>window.__refreshDashboardTickets?.();
     toolbar.querySelector('#ticketSelectModeBtn').addEventListener('click',()=>{selectMode=!selectMode;if(!selectMode)selectedIds.clear();updateSelectionToolbar()});
     toolbar.querySelector('#deleteSelectedTicketsBtn').addEventListener('click',deleteSelected);
   }
 
-  function decorate(){
-    addCss();
-    ensureToolbar();
-    const records=load();
-    const validIds=new Set(records.map(r=>r.id));
-    [...selectedIds].forEach(id=>{if(!validIds.has(id))selectedIds.delete(id)});
-    const cards=[...document.querySelectorAll('#ticketList .savedTicket')];
-    cards.forEach((card,index)=>{
-      const record=records[index];
-      if(!record)return;
-      card.dataset.ticketId=record.id;
-      let checkbox=card.querySelector('.ticketSelectBox');
-      if(!checkbox){checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.className='ticketSelectBox';checkbox.setAttribute('aria-label','Select ticket');card.prepend(checkbox);checkbox.addEventListener('change',()=>{if(checkbox.checked)selectedIds.add(record.id);else selectedIds.delete(record.id);updateSelectionToolbar()})}
-      checkbox.value=record.id;
-      checkbox.checked=selectedIds.has(record.id);
-      if(card.dataset.detailsReady==='1')return;
-      card.dataset.detailsReady='1';
-      const top=card.querySelector('.savedTicketTop');
-      if(!top)return;
-      const button=document.createElement('button');
-      button.type='button';button.className='ghost ticketExpandBtn';button.textContent='›';button.setAttribute('aria-label','Show ticket legs');button.setAttribute('aria-expanded',String(expandedIds.has(record.id)));top.appendChild(button);
-      const panel=document.createElement('div');panel.className='savedTicketDetails'+(expandedIds.has(record.id)?'':' hide');const actions=card.querySelector('.savedActions');card.insertBefore(panel,actions||null);
-      button.addEventListener('click',()=>toggle(record.id,button,panel));
-      if(expandedIds.has(record.id))loadDetails(record.id,panel,true);
-    });
-    updateSelectionToolbar();
-  }
+  function decorate(){addCss();ensureToolbar();const records=load();const validIds=new Set(records.map(r=>r.id));[...selectedIds].forEach(id=>{if(!validIds.has(id))selectedIds.delete(id)});const cards=[...document.querySelectorAll('#ticketList .savedTicket')];cards.forEach((card,index)=>{const record=records[index];if(!record)return;card.dataset.ticketId=record.id;let checkbox=card.querySelector('.ticketSelectBox');if(!checkbox){checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.className='ticketSelectBox';checkbox.setAttribute('aria-label','Select ticket');card.prepend(checkbox);checkbox.addEventListener('change',()=>{if(checkbox.checked)selectedIds.add(record.id);else selectedIds.delete(record.id);updateSelectionToolbar()})}checkbox.value=record.id;checkbox.checked=selectedIds.has(record.id);if(card.dataset.detailsReady==='1')return;card.dataset.detailsReady='1';const top=card.querySelector('.savedTicketTop');if(!top)return;const button=document.createElement('button');button.type='button';button.className='ghost ticketExpandBtn';button.textContent='›';button.setAttribute('aria-label','Show ticket legs');button.setAttribute('aria-expanded',String(expandedIds.has(record.id)));top.appendChild(button);const panel=document.createElement('div');panel.className='savedTicketDetails'+(expandedIds.has(record.id)?'':' hide');const actions=card.querySelector('.savedActions');card.insertBefore(panel,actions||null);button.addEventListener('click',()=>toggle(record.id,button,panel));if(expandedIds.has(record.id))loadDetails(record.id,panel,true)});updateSelectionToolbar()}
 
-  function wrapDashboard(){
-    const original=window.renderTicketDashboard;
-    if(typeof original!=='function'||original.__detailsV55Wrapped)return;
-    const wrapped=function(...args){const out=original.apply(this,args);requestAnimationFrame(decorate);return out};
-    wrapped.__detailsV55Wrapped=true;
-    window.renderTicketDashboard=wrapped;
-  }
-
+  function wrapDashboard(){const original=window.renderTicketDashboard;if(typeof original!=='function'||original.__detailsV60Wrapped)return;const wrapped=function(...args){const out=original.apply(this,args);requestAnimationFrame(decorate);return out};wrapped.__detailsV60Wrapped=true;window.renderTicketDashboard=wrapped}
   function install(){wrapDashboard();decorate()}
-  install();
-  window.addEventListener('load',()=>{wrapDashboard();decorate()},{once:true});
-  document.addEventListener('click',event=>{if(event.target.closest?.('#ticketsTab'))setTimeout(decorate,0)},true);
+  install();window.addEventListener('load',()=>{wrapDashboard();decorate()},{once:true});document.addEventListener('click',event=>{if(event.target.closest?.('#ticketsTab'))setTimeout(decorate,0)},true);
 })();
