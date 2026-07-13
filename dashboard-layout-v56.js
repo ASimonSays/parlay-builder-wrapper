@@ -1,4 +1,4 @@
-/* DASHBOARD LAYOUT V65 — exact action order, dense header, inline sportsbook badge */
+/* DASHBOARD LAYOUT V69 — compact toolbar and inline sportsbook badge */
 (() => {
   'use strict';
 
@@ -12,10 +12,11 @@
       #dashboardView .dashboardActions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;min-width:0!important}
       #dashboardView .dashboardActions button,#dashboardView .dashboardActions a{width:100%!important;min-width:0!important;min-height:58px!important;padding:8px 5px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;line-height:1.18!important;font-size:11px!important}
       #dashboardView .dashboardActions .forcedTwoLine{display:block!important;width:100%!important;text-align:center!important}
-      #dashboardView .dashboardToolbarV55{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;gap:8px!important;align-items:center!important;margin:0 0 10px!important}
-      #dashboardView .dashboardToolbarStatus{grid-column:1!important;grid-row:1!important;margin:0!important;text-align:left!important;min-width:0!important}
-      #refreshTicketsBtn{grid-column:2!important;grid-row:1!important}
-      #ticketSelectModeBtn{grid-column:3!important;grid-row:1!important}
+      #dashboardView .dashboardToolbarV55{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto auto!important;gap:7px!important;align-items:center!important;margin:0 0 10px!important}
+      #refreshTicketsBtn{grid-column:1!important;grid-row:1!important}
+      #dashboardView .dashboardToolbarStatus{grid-column:2!important;grid-row:1!important;justify-self:start!important;margin:0!important;text-align:left!important;min-width:0!important;white-space:nowrap!important}
+      #toggleAllTicketsBtn{grid-column:3!important;grid-row:1!important}
+      #ticketSelectModeBtn{grid-column:4!important;grid-row:1!important}
       #deleteSelectedTicketsBtn{grid-column:1/-1!important;grid-row:2!important;justify-self:end!important}
       #ticketList .savedTitleRow{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}
       #ticketList .savedTitleRow h3{margin:0!important}
@@ -29,6 +30,7 @@
         #dashboardView .dashboardHeader{grid-template-columns:minmax(102px,.85fr) minmax(0,2.8fr)!important;gap:7px!important}
         #dashboardView .dashboardActions{gap:6px!important}
         #dashboardView .dashboardActions button,#dashboardView .dashboardActions a{font-size:10px!important;padding:7px 3px!important}
+        #dashboardView .dashboardToolbarV55{gap:5px!important}
         #ticketList .savedActions{gap:6px!important}
         #ticketList .savedActions button{font-size:9px!important;padding:6px 2px!important}
       }
@@ -67,17 +69,17 @@
     const buttons=[...actions.querySelectorAll(':scope > button')],find=pattern=>buttons.find(button=>pattern.test(normalizedText(button)));
     [
       {button:find(/^VIEW$/),kind:'actionUse'},
-      {button:find(/^COPY CODE$/),kind:'actionUse',lines:['COPY','CODE']},
+      {button:find(/^COPY CODE$/),kind:'actionUse'},
       {button:find(/^SHARE$/),kind:'actionUse'},
       {button:find(/^DUPLICATE$/),kind:'actionChange'},
       {button:find(/^(COMPLETE|MARK ACTIVE)$/),kind:'actionChange'},
       {button:find(/^EDIT$/),kind:'actionChange'},
       {button:find(/^DELETE$/),kind:'actionChange'}
-    ].forEach(item=>{if(item.button){item.button.classList.remove('actionUse','actionChange');item.button.classList.add(item.kind);if(item.lines)setTwoLines(item.button,...item.lines);actions.appendChild(item.button)}});
+    ].forEach(item=>{if(item.button){item.button.classList.remove('actionUse','actionChange');item.button.classList.add(item.kind);actions.appendChild(item.button)}});
   }
 
   function apply(){addCss();formatHeaderActions();document.querySelectorAll('#ticketList .savedTicket').forEach(arrangeTicketActions)}
-  function wrapDashboard(){const original=window.renderTicketDashboard;if(typeof original!=='function'||original.__layoutV65Wrapped)return;const wrapped=function(...args){const out=original.apply(this,args);requestAnimationFrame(apply);return out};wrapped.__layoutV65Wrapped=true;window.renderTicketDashboard=wrapped}
+  function wrapDashboard(){const original=window.renderTicketDashboard;if(typeof original!=='function'||original.__layoutV69Wrapped)return;const wrapped=function(...args){const out=original.apply(this,args);requestAnimationFrame(apply);return out};wrapped.__layoutV69Wrapped=true;window.renderTicketDashboard=wrapped}
 
   wrapDashboard();apply();
   window.addEventListener('load',()=>{wrapDashboard();apply()},{once:true});
