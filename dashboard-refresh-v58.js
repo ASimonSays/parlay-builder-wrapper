@@ -1,8 +1,7 @@
-/* DASHBOARD REFRESH V58 — single batched refresh and adjacent timestamp */
+/* DASHBOARD REFRESH V59 — one delegated refresh action and adjacent timestamp */
 (() => {
   'use strict';
   const KEY='parlayTracker.savedTickets.v1';
-  let running=false;
 
   function esc(v){return window.esc?window.esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
   function load(){try{return window.loadSavedTickets?window.loadSavedTickets():JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}}
@@ -49,7 +48,7 @@
   }
 
   async function refreshOnce(){
-    if(running)return;
+    if(window.__dashboardRefreshRunning)return;
     const status=document.querySelector('.dashboardToolbarStatus');
     const openCards=[...document.querySelectorAll('#ticketList .savedTicket')].filter(card=>{
       const panel=card.querySelector('.savedTicketDetails');
@@ -58,10 +57,10 @@
     if(!openCards.length){if(status)status.textContent='Open a ticket to refresh its legs.';return}
 
     const byId=new Map(load().map(record=>[record.id,record]));
-    const targets=openCards.map(card=>({card,panel:card.querySelector('.savedTicketDetails'),record:byId.get(card.dataset.ticketId)})).filter(x=>x.record);
+    const targets=openCards.map(card=>({panel:card.querySelector('.savedTicketDetails'),record:byId.get(card.dataset.ticketId)})).filter(x=>x.record);
     if(!targets.length)return;
 
-    running=true;
+    window.__dashboardRefreshRunning=true;
     if(status)status.textContent='Refreshing…';
     targets.forEach(x=>x.panel.innerHTML='<div class="dashboardDetailsMessage">Refreshing leg status…</div>');
     try{
@@ -75,21 +74,15 @@
     }catch(error){
       targets.forEach(x=>x.panel.innerHTML=`<div class="dashboardDetailsMessage">Unable to refresh leg status: ${esc(error?.message||error)}</div>`);
       if(status)status.textContent='Refresh failed';
-    }finally{running=false}
+    }finally{window.__dashboardRefreshRunning=false}
   }
 
-  function wire(){
-    addCss();
-    const old=document.getElementById('refreshTicketsBtn');
-    if(!old||old.dataset.batchRefresh==='1')return;
-    const button=old.cloneNode(true);
-    button.dataset.batchRefresh='1';
-    old.replaceWith(button);
-    button.addEventListener('click',refreshOnce);
-  }
-
-  function install(){wire()}
-  install();
-  window.addEventListener('load',wire,{once:true});
-  document.addEventListener('click',event=>{if(event.target.closest?.('#ticketsTab'))setTimeout(wire,0)},true);
+  addCss();
+  document.addEventListener('click',event=>{
+    const button=event.target.closest?.('#refreshTicketsBtn');
+    if(!button)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    refreshOnce();
+  },true);
 })();
