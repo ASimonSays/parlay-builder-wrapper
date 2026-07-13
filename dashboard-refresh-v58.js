@@ -1,4 +1,4 @@
-/* DASHBOARD REFRESH V63 — refresh legs and ticket-level state together */
+/* DASHBOARD REFRESH V64 — refresh legs and ticket-level state together */
 (() => {
   'use strict';
   const KEY='parlayTracker.savedTickets.v1';
@@ -24,7 +24,7 @@
   }
 
   function datesFor(records){const dates=[];for(const record of records){const t=record?.ticket||{};if(t.date)dates.push(t.date);for(const leg of t.legs||[])if(leg.date)dates.push(leg.date)}return [...new Set(dates)]}
-  function detailsHtml(record){const C=window.ParlayTrackerCore,t=record.ticket||{};return (record.__evaluated||[]).map(leg=>{const x=leg.__live||C.statusObj('pending',''),game=leg.__game;const meta=t.type==='sgp'?[game?C.baseGameMeta(game):'']:[C.legGame(t,leg),game?C.baseGameMeta(game):''];return `<div class="dashboardLeg"><div><div class="dashboardLegLabel">${esc(leg.label||'Untitled')}</div><div class="dashboardLegMeta">${esc(meta.filter(Boolean).join(' · '))}</div></div><div class="dashboardLegRight"><div class="dashboardLegValue ${esc(x.valueClass||valueClass(x.state))}">${esc(x.value||'')}</div><span class="dashboardLegStatus ${stateClass(x.state)}">${esc(stateClass(x.state))}</span></div></div>`}).join('')||'<div class="dashboardDetailsMessage">No legs in this ticket.</div>'}
+  function detailsHtml(record){const C=window.ParlayTrackerCore,t=record.ticket||{};return (record.__evaluated||[]).map(leg=>{const x=leg.__live||C.statusObj('pending',''),game=leg.__game,state=stateClass(x.state);const meta=t.type==='sgp'?[game?C.baseGameMeta(game):'']:[C.legGame(t,leg),game?C.baseGameMeta(game):''];return `<div class="dashboardLeg leg${state}"><div><div class="dashboardLegLabel">${esc(leg.label||'Untitled')}</div><div class="dashboardLegMeta">${esc(meta.filter(Boolean).join(' · '))}</div></div><div class="dashboardLegRight"><div class="dashboardLegValue ${esc(x.valueClass||valueClass(x.state))}">${esc(x.value||'')}</div><span class="dashboardLegStatus ${state}">${esc(state)}</span></div></div>`}).join('')||'<div class="dashboardDetailsMessage">No legs in this ticket.</div>'}
   function outcomeFor(record){
     const C=window.ParlayTrackerCore;
     const states=(record.__evaluated||[]).map(leg=>({state:leg.__live?.state||'pending'}));
