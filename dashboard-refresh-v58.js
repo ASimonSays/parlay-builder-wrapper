@@ -1,4 +1,4 @@
-/* DASHBOARD REFRESH V69 — refresh legs and ticket-level state together */
+/* DASHBOARD REFRESH V70 — refresh legs and ticket-level state together */
 (() => {
   'use strict';
   const KEY='parlayTracker.savedTickets.v1';
@@ -15,9 +15,9 @@
     const style=document.createElement('style');
     style.id='dashboardRefreshV58Css';
     style.textContent=`
-      #dashboardView .dashboardToolbarV55{grid-template-columns:auto minmax(0,1fr) auto auto!important}
-      #refreshTicketsBtn{grid-column:1!important;grid-row:1!important}
-      #dashboardView .dashboardToolbarStatus{grid-column:2!important;grid-row:1!important;justify-self:start!important;text-align:left!important;white-space:nowrap!important}
+      #dashboardView .dashboardToolbarV55{grid-template-columns:minmax(0,1fr) auto auto auto!important}
+      #dashboardView .dashboardToolbarStatus{grid-column:1!important;grid-row:1!important;justify-self:start!important;text-align:left!important;white-space:nowrap!important}
+      #refreshTicketsBtn{grid-column:2!important;grid-row:1!important}
       #toggleAllTicketsBtn{grid-column:3!important;grid-row:1!important}
       #ticketSelectModeBtn{grid-column:4!important;grid-row:1!important}
       #deleteSelectedTicketsBtn{grid-column:1/-1!important;grid-row:2!important}
