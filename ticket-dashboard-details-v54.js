@@ -1,4 +1,4 @@
-/* TICKET DASHBOARD DETAILS V69 */
+/* TICKET DASHBOARD DETAILS V70 */
 (() => {
   'use strict';
   const KEY='parlayTracker.savedTickets.v1';
@@ -31,10 +31,10 @@
       .dashboardLegStatus.WIN{background:#bfe3bd;color:#154e18}.dashboardLegStatus.LOSS{background:#efc1bc;color:#7a1710}.dashboardLegStatus.LIVE{background:#f1dda5;color:#674500}.dashboardLegStatus.PENDING,.dashboardLegStatus.PUSH{background:#d7dde6;color:#4f5966}.dashboardLegStatus.SUSPENDED,.dashboardLegStatus.UNAVAILABLE{background:#f4c27a;color:#6b3b00}
       .dashboardLegValue.valueWin{color:#278c31}.dashboardLegValue.valueLoss{color:#c72f3e}.dashboardLegValue.valuePush{color:#9b7600}.dashboardLegValue.valueSuspended{color:#a75e00}.dashboardLegValue.valuePending{color:#687383}
       .dashboardDetailsMessage{padding:10px 2px;color:#596372;font-size:12px;font-weight:750}
-      .dashboardToolbarV55{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:7px;align-items:center;margin:0 0 10px}
+      .dashboardToolbarV55{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:7px;align-items:center;margin:0 0 10px}
       .dashboardToolbarV55 button{width:auto;min-width:0;padding:8px 10px;font-size:10px;white-space:nowrap}
-      #refreshTicketsBtn{grid-column:1;grid-row:1}.dashboardToolbarStatus{grid-column:2;grid-row:1;justify-self:start;min-width:0;font-size:10px;font-weight:800;color:#596372;white-space:nowrap}
-      #toggleAllTicketsBtn{grid-column:3;grid-row:1}#ticketSelectModeBtn{grid-column:4;grid-row:1}
+      .dashboardToolbarStatus{grid-column:1;grid-row:1;justify-self:start;min-width:0;font-size:10px;font-weight:800;color:#596372;white-space:nowrap}
+      #refreshTicketsBtn{grid-column:2;grid-row:1}#toggleAllTicketsBtn{grid-column:3;grid-row:1}#ticketSelectModeBtn{grid-column:4;grid-row:1}
       #deleteSelectedTicketsBtn{grid-column:1/-1;grid-row:2;justify-self:end}
       .ticketSelectBox{display:none;position:absolute;left:8px;top:9px;width:22px;height:22px;z-index:3;accent-color:#b27b24}
       body.ticketSelectMode .ticketSelectBox{display:block}body.ticketSelectMode .savedTicket{padding-left:38px}.deleteSelectedBtn.hide{display:none!important}
@@ -97,7 +97,7 @@
     const dashboard=document.getElementById('dashboardView');
     if(!dashboard||document.getElementById('dashboardToolbarV55'))return;
     const toolbar=document.createElement('div');toolbar.id='dashboardToolbarV55';toolbar.className='dashboardToolbarV55';
-    toolbar.innerHTML='<button id="refreshTicketsBtn" class="ghost" type="button">Refresh</button><span class="dashboardToolbarStatus"></span><button id="toggleAllTicketsBtn" class="ghost" type="button" aria-pressed="false">Expand All</button><button id="ticketSelectModeBtn" class="ghost" type="button">Select</button><button id="deleteSelectedTicketsBtn" class="deleteSelectedBtn hide" type="button">Delete Selected</button>';
+    toolbar.innerHTML='<span class="dashboardToolbarStatus"></span><button id="refreshTicketsBtn" class="ghost" type="button">Refresh</button><button id="toggleAllTicketsBtn" class="ghost" type="button" aria-pressed="false">Expand All</button><button id="ticketSelectModeBtn" class="ghost" type="button">Select</button><button id="deleteSelectedTicketsBtn" class="deleteSelectedBtn hide" type="button">Delete Selected</button>';
     const header=dashboard.querySelector('.dashboardHeader');if(header)header.insertAdjacentElement('afterend',toolbar);else dashboard.prepend(toolbar);
     toolbar.querySelector('#refreshTicketsBtn').onclick=()=>window.__refreshDashboardTickets?.();
     toolbar.querySelector('#ticketSelectModeBtn').addEventListener('click',()=>{selectMode=!selectMode;if(!selectMode)selectedIds.clear();updateSelectionToolbar()});
@@ -128,7 +128,7 @@
     updateSelectionToolbar();updateExpandAllButton();
   }
 
-  function wrapDashboard(){const original=window.renderTicketDashboard;if(typeof original!=='function'||original.__detailsV69Wrapped)return;const wrapped=function(...args){const out=original.apply(this,args);requestAnimationFrame(decorate);return out};wrapped.__detailsV69Wrapped=true;window.renderTicketDashboard=wrapped}
+  function wrapDashboard(){const original=window.renderTicketDashboard;if(typeof original!=='function'||original.__detailsV70Wrapped)return;const wrapped=function(...args){const out=original.apply(this,args);requestAnimationFrame(decorate);return out};wrapped.__detailsV70Wrapped=true;window.renderTicketDashboard=wrapped}
   function install(){wrapDashboard();decorate()}
   install();window.addEventListener('load',()=>{wrapDashboard();decorate()},{once:true});document.addEventListener('click',event=>{if(event.target.closest?.('#ticketsTab'))setTimeout(decorate,0)},true);
 })();
