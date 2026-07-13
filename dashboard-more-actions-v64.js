@@ -1,26 +1,40 @@
-/* DASHBOARD MORE ACTIONS V68 — reliable four-button row with collapsible secondary actions */
+/* DASHBOARD MORE ACTIONS V69 — compact full-width primary row and collapsible secondary row */
 (() => {
   'use strict';
 
   let retryTimer=null;
 
   function addCss(){
-    if(document.getElementById('dashboardMoreActionsV68Css'))return;
+    if(document.getElementById('dashboardMoreActionsV69Css'))return;
     const style=document.createElement('style');
-    style.id='dashboardMoreActionsV68Css';
+    style.id='dashboardMoreActionsV69Css';
     style.textContent=`
       #ticketList .savedActions.moreActionsEnabled{
         display:grid!important;
+        width:100%!important;
         grid-template-columns:repeat(4,minmax(0,1fr))!important;
-        gap:6px!important;
+        column-gap:6px!important;
+        row-gap:0!important;
       }
       #ticketList .savedActions.moreActionsEnabled>button{
         grid-column:auto!important;
         width:100%!important;
         min-width:0!important;
+        min-height:34px!important;
+        padding:5px 4px!important;
+        font-size:9px!important;
+        line-height:1!important;
+        letter-spacing:.045em!important;
+        white-space:nowrap!important;
       }
+      #ticketList .savedActions.moreActionsEnabled>.savedActionPrimary,
+      #ticketList .savedActions.moreActionsEnabled>.savedActionsMoreToggle{grid-row:1!important}
       #ticketList .savedActions.moreActionsEnabled>.savedActionSecondary{
         display:none!important;
+        grid-row:2!important;
+      }
+      #ticketList .savedActions.moreActionsEnabled.moreOpen{
+        row-gap:6px!important;
       }
       #ticketList .savedActions.moreActionsEnabled.moreOpen>.savedActionSecondary{
         display:flex!important;
@@ -32,19 +46,18 @@
       }
       #ticketList .savedActionsMoreToggle .moreChevron{
         display:inline-block;
-        margin-left:5px;
-        font-size:14px;
+        margin-left:4px;
+        font-size:12px;
         line-height:1;
         transition:transform .18s ease;
       }
-      #ticketList .savedActionsMoreToggle[aria-expanded="true"] .moreChevron{
-        transform:rotate(180deg);
-      }
-      #ticketList .savedActions.moreActionsEnabled.moreOpen{
-        row-gap:7px!important;
+      #ticketList .savedActionsMoreToggle[aria-expanded="true"] .moreChevron{transform:rotate(180deg)}
+      @media(min-width:600px){
+        #ticketList .savedActions.moreActionsEnabled>button{font-size:10px!important}
       }
       @media(max-width:390px){
-        #ticketList .savedActions.moreActionsEnabled{gap:5px!important}
+        #ticketList .savedActions.moreActionsEnabled{column-gap:5px!important}
+        #ticketList .savedActions.moreActionsEnabled>button{min-height:32px!important;padding:4px 3px!important;font-size:8px!important}
       }
     `;
     document.head.appendChild(style);
@@ -54,6 +67,12 @@
     const raw=String(button?.innerText||button?.textContent||'').replace(/\s+/g,'').toUpperCase();
     const aliases={COPYCODE:'COPY CODE',MARKACTIVE:'MARK ACTIVE'};
     return aliases[raw]||raw;
+  }
+
+  function setToggleState(actions,toggle){
+    const open=actions.classList.contains('moreOpen');
+    toggle.setAttribute('aria-expanded',String(open));
+    toggle.innerHTML=`${open?'Less':'More'} <span class="moreChevron">⌄</span>`;
   }
 
   function enhance(card){
@@ -70,7 +89,15 @@
     const del=buttons.find(button=>label(button)==='DELETE');
     if(!view||!copy||!share||!duplicate||!complete||!edit||!del)return false;
 
+    copy.textContent='Copy Code';
+
     let toggle=actions.querySelector(':scope > .savedActionsMoreToggle');
+    if(actions.classList.contains('moreActionsEnabled')&&toggle){
+      setToggleState(actions,toggle);
+      return true;
+    }
+
+    const wasOpen=actions.classList.contains('moreOpen');
     if(!toggle){
       toggle=document.createElement('button');
       toggle.type='button';
@@ -86,22 +113,18 @@
       button.classList.add('savedActionSecondary');
     });
 
+    actions.replaceChildren(view,copy,share,toggle,duplicate,complete,edit,del);
     actions.classList.add('moreActionsEnabled');
+    actions.classList.toggle('moreOpen',wasOpen);
     actions.dataset.moreReady='1';
-    actions.classList.remove('moreOpen');
-    toggle.setAttribute('aria-expanded','false');
-    toggle.innerHTML='More <span class="moreChevron">⌄</span>';
+    setToggleState(actions,toggle);
 
     toggle.onclick=event=>{
       event.preventDefault();
       event.stopPropagation();
-      const open=!actions.classList.contains('moreOpen');
-      actions.classList.toggle('moreOpen',open);
-      toggle.setAttribute('aria-expanded',String(open));
-      toggle.innerHTML=`${open?'Less':'More'} <span class="moreChevron">⌄</span>`;
+      actions.classList.toggle('moreOpen');
+      setToggleState(actions,toggle);
     };
-
-    actions.replaceChildren(view,copy,share,toggle,duplicate,complete,edit,del);
     return true;
   }
 
@@ -124,18 +147,17 @@
 
   function wrap(){
     const original=window.renderTicketDashboard;
-    if(typeof original!=='function'||original.__moreActionsV68Wrapped)return;
+    if(typeof original!=='function'||original.__moreActionsV69Wrapped)return;
     const wrapped=function(...args){
       const out=original.apply(this,args);
       requestAnimationFrame(retry);
       return out;
     };
-    wrapped.__moreActionsV68Wrapped=true;
+    wrapped.__moreActionsV69Wrapped=true;
     window.renderTicketDashboard=wrapped;
   }
 
-  wrap();
-  retry();
+  wrap();retry();
   window.addEventListener('load',()=>{wrap();retry()},{once:true});
   document.addEventListener('click',event=>{if(event.target.closest?.('#ticketsTab'))setTimeout(retry,0)},true);
   document.addEventListener('parlay:dashboard-refreshed',retry);
