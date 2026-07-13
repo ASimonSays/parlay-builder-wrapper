@@ -1,4 +1,4 @@
-/* PARLAY_VIEW_FIXES_V26 */
+/* PARLAY_VIEW_FIXES_V27 */
 (() => {
   'use strict';
 
@@ -13,11 +13,29 @@
   window.openActiveTicketsView=()=>goToHash('#view=active');
   window.closeStandaloneViewer=()=>goToHash('');
 
-  function addCompactHeaderCss(){
-    if(document.getElementById('compactViewHeaderCss'))return;
+  function addHeaderCss(){
+    if(document.getElementById('parlayHeaderLogoCss'))return;
     const style=document.createElement('style');
-    style.id='compactViewHeaderCss';
+    style.id='parlayHeaderLogoCss';
     style.textContent=`
+      body:not(.standaloneCompactHeader) .top{
+        padding:10px 12px 8px!important;
+        margin-bottom:10px!important;
+      }
+      body:not(.standaloneCompactHeader) .top .logo{
+        display:block!important;
+        width:min(420px,88vw)!important;
+        max-height:96px!important;
+        object-fit:contain!important;
+        margin:0 auto 3px!important;
+        filter:drop-shadow(0 5px 8px rgba(0,0,0,.22))!important;
+      }
+      body:not(.standaloneCompactHeader) .top h1{
+        margin:2px 0 0!important;
+      }
+      body:not(.standaloneCompactHeader) .top p{
+        margin:2px 0 0!important;
+      }
       body.standaloneCompactHeader .top{padding:9px 12px 8px;margin-bottom:10px}
       body.standaloneCompactHeader .top .logo{width:min(116px,29vw);margin:0 auto;filter:drop-shadow(0 5px 8px rgba(0,0,0,.22))}
       body.standaloneCompactHeader .top h1,
@@ -26,23 +44,23 @@
     document.head.appendChild(style);
   }
 
-  function syncCompactHeader(){
-    addCompactHeaderCss();
+  function syncHeaderLogo(){
+    addHeaderCss();
     const logo=document.querySelector('.top .logo');
     const inTicketView=Boolean(location.hash);
     document.body.classList.toggle('standaloneCompactHeader',inTicketView);
     if(!logo)return;
-    if(!logo.dataset.fullLogoSrc)logo.dataset.fullLogoSrc=logo.getAttribute('src')||'';
     if(inTicketView){
-      logo.src='./ssb_emblem_webapp_logo_transparent_768.png?v=compact-view-26';
+      logo.src='./ssb_emblem_webapp_logo_transparent_768.png?v=compact-view-27';
+      logo.alt='Simon Sports Betting emblem';
+    }else{
+      logo.src='./simon-sports-betting-nameplate.png?v=nameplate-27';
       logo.alt='Simon Sports Betting';
-    }else if(logo.dataset.fullLogoSrc){
-      logo.src=logo.dataset.fullLogoSrc;
     }
   }
 
   function cleanStandaloneView(){
-    syncCompactHeader();
+    syncHeaderLogo();
     document.querySelectorAll('.phaseNote').forEach(el=>el.remove());
 
     const statuses=[...document.querySelectorAll('#liveRefreshStatus')];
