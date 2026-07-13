@@ -1,4 +1,4 @@
-/* DASHBOARD LAYOUT V56 — aligned header controls and two-row ticket actions */
+/* DASHBOARD LAYOUT V57 — exact header order, forced two-line labels, two-row ticket actions */
 (() => {
   'use strict';
 
@@ -7,7 +7,6 @@
     const style=document.createElement('style');
     style.id='dashboardLayoutV56Css';
     style.textContent=`
-      /* My Tickets heading + three equal two-line primary actions. */
       #dashboardView .dashboardHeader{
         display:grid!important;
         grid-template-columns:minmax(118px,.9fr) minmax(0,2.7fr)!important;
@@ -25,7 +24,8 @@
         gap:8px!important;
         min-width:0!important;
       }
-      #dashboardView .dashboardActions button{
+      #dashboardView .dashboardActions button,
+      #dashboardView .dashboardActions a{
         width:100%!important;
         min-width:0!important;
         min-height:58px!important;
@@ -38,13 +38,12 @@
         line-height:1.18!important;
         font-size:11px!important;
       }
-      #dashboardView .dashboardActions button .forcedTwoLine{
+      #dashboardView .dashboardActions .forcedTwoLine{
         display:block!important;
         width:100%!important;
         text-align:center!important;
       }
 
-      /* Timestamp left, then Refresh, then Select beneath the main actions. */
       #dashboardView .dashboardToolbarV55{
         display:grid!important;
         grid-template-columns:minmax(0,1fr) auto auto!important;
@@ -67,7 +66,6 @@
         justify-self:end!important;
       }
 
-      /* Ticket actions: use-as-is row of three, modification row of four. */
       #ticketList .savedActions{
         display:grid!important;
         grid-template-columns:repeat(12,minmax(0,1fr))!important;
@@ -99,7 +97,8 @@
       @media(max-width:390px){
         #dashboardView .dashboardHeader{grid-template-columns:minmax(102px,.85fr) minmax(0,2.8fr)!important;gap:7px!important}
         #dashboardView .dashboardActions{gap:6px!important}
-        #dashboardView .dashboardActions button{font-size:10px!important;padding:7px 3px!important}
+        #dashboardView .dashboardActions button,
+        #dashboardView .dashboardActions a{font-size:10px!important;padding:7px 3px!important}
         #ticketList .savedActions{gap:6px!important}
         #ticketList .savedActions button{font-size:9px!important;padding:6px 2px!important}
       }
@@ -107,23 +106,29 @@
     document.head.appendChild(style);
   }
 
-  function normalizedText(button){
-    return String(button?.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();
+  function normalizedText(el){
+    return String(el?.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();
   }
 
-  function setTwoLines(button,first,second){
-    if(!button)return;
-    button.innerHTML=`<span class="forcedTwoLine">${first}<br>${second}</span>`;
+  function setTwoLines(el,first,second){
+    if(!el)return;
+    el.innerHTML=`<span class="forcedTwoLine">${first}<br>${second}</span>`;
   }
 
   function formatHeaderActions(){
     const actions=document.querySelector('#dashboardView .dashboardActions');
     if(!actions)return;
-    [...actions.querySelectorAll('button')].forEach(button=>{
-      const text=normalizedText(button);
-      if(text.includes('IMPORT'))setTwoLines(button,'IMPORT','CODE');
-      else if(text.includes('VIEW')&&text.includes('ACTIVE'))setTwoLines(button,'VIEW','ACTIVE');
-      else if(text.includes('NEW')&&text.includes('TICKET'))setTwoLines(button,'NEW','TICKET');
+    const controls=[...actions.querySelectorAll('button,a')];
+    const find=pattern=>controls.find(control=>pattern.test(normalizedText(control)));
+    const ordered=[
+      {control:find(/IMPORT/),lines:['IMPORT','CODE']},
+      {control:find(/VIEW.*ACTIVE|ACTIVE.*VIEW/),lines:['VIEW','ACTIVE']},
+      {control:find(/NEW.*TICKET|TICKET.*NEW/),lines:['NEW','TICKET']}
+    ];
+    ordered.forEach(item=>{
+      if(!item.control)return;
+      setTwoLines(item.control,item.lines[0],item.lines[1]);
+      actions.appendChild(item.control);
     });
   }
 
