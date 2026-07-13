@@ -1,4 +1,4 @@
-/* PARLAY_VIEW_FIXES_V27 */
+/* PARLAY_VIEW_FIXES_V28 */
 (() => {
   'use strict';
 
@@ -36,8 +36,15 @@
       body:not(.standaloneCompactHeader) .top p{
         margin:2px 0 0!important;
       }
-      body.standaloneCompactHeader .top{padding:9px 12px 8px;margin-bottom:10px}
-      body.standaloneCompactHeader .top .logo{width:min(116px,29vw);margin:0 auto;filter:drop-shadow(0 5px 8px rgba(0,0,0,.22))}
+      body.standaloneCompactHeader .top{padding:5px 12px 4px!important;margin-bottom:8px!important}
+      body.standaloneCompactHeader .top .logo{
+        display:block!important;
+        width:min(138px,34vw)!important;
+        max-height:62px!important;
+        object-fit:contain!important;
+        margin:0 auto!important;
+        filter:drop-shadow(0 4px 7px rgba(0,0,0,.22))!important
+      }
       body.standaloneCompactHeader .top h1,
       body.standaloneCompactHeader .top p{display:none!important}
     `;
@@ -51,10 +58,10 @@
     document.body.classList.toggle('standaloneCompactHeader',inTicketView);
     if(!logo)return;
     if(inTicketView){
-      logo.src='./ssb_emblem_webapp_logo_transparent_768.png?v=compact-view-27';
+      logo.src='./ssb_emblem_webapp_box_transparent_768.png?v=ticket-view-28';
       logo.alt='Simon Sports Betting emblem';
     }else{
-      logo.src='./simon-sports-betting-nameplate.png?v=nameplate-27';
+      logo.src='./simon-sports-betting-nameplate.png?v=nameplate-28';
       logo.alt='Simon Sports Betting';
     }
   }
