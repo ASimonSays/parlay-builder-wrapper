@@ -8,10 +8,10 @@
   "theme_color": "#d7dde6",
   "icons": [
     {
-      "src": "./ssb_emblem_webapp_box_transparent_768.png?v=75",
-      "sizes": "768x768",
+      "src": "./favicon_silver_visible_180.png?v=76",
+      "sizes": "180x180",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
