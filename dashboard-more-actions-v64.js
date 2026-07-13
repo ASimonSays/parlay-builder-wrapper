@@ -1,8 +1,10 @@
-/* DASHBOARD MORE ACTIONS V70 — full-width View row, compact three-button row, full-width More row */
+/* DASHBOARD MORE ACTIONS V72 — full-width View row with persistent per-ticket More state */
 (() => {
   'use strict';
 
   let retryTimer=null;
+  const openTicketIds=window.__dashboardMoreOpenIds instanceof Set?window.__dashboardMoreOpenIds:new Set();
+  window.__dashboardMoreOpenIds=openTicketIds;
 
   function addCss(){
     if(document.getElementById('dashboardMoreActionsV70Css'))return;
@@ -131,6 +133,9 @@
     const del=buttons.find(button=>label(button)==='DELETE');
     if(!view||!copy||!share||!duplicate||!complete||!edit||!del)return false;
 
+    const ticketId=String(card.dataset.ticketId||'');
+    const shouldOpen=ticketId?openTicketIds.has(ticketId):actions.classList.contains('moreOpen');
+
     view.textContent='View';
     copy.textContent='Copy Code';
     share.textContent='Share';
@@ -146,7 +151,6 @@
       toggle.className='ghost savedActionsMoreToggle';
     }
 
-    const wasOpen=actions.classList.contains('moreOpen');
     setClass(view,'savedActionView','savedActionPrimary');
     setClass(copy,'savedActionCopy','savedActionPrimary');
     setClass(share,'savedActionShare','savedActionPrimary');
@@ -157,14 +161,16 @@
 
     actions.replaceChildren(view,copy,share,toggle,duplicate,complete,edit,del);
     actions.classList.add('moreActionsEnabled');
-    actions.classList.toggle('moreOpen',wasOpen);
+    actions.classList.toggle('moreOpen',shouldOpen);
     actions.dataset.moreReady='1';
     setToggleState(actions,toggle);
 
     toggle.onclick=event=>{
       event.preventDefault();
       event.stopPropagation();
-      actions.classList.toggle('moreOpen');
+      const open=!actions.classList.contains('moreOpen');
+      actions.classList.toggle('moreOpen',open);
+      if(ticketId){if(open)openTicketIds.add(ticketId);else openTicketIds.delete(ticketId)}
       setToggleState(actions,toggle);
     };
     return true;
@@ -189,18 +195,23 @@
 
   function wrap(){
     const original=window.renderTicketDashboard;
-    if(typeof original!=='function'||original.__moreActionsV70Wrapped)return;
+    if(typeof original!=='function'||original.__moreActionsV72Wrapped)return;
     const wrapped=function(...args){
       const out=original.apply(this,args);
       requestAnimationFrame(retry);
       return out;
     };
-    wrapped.__moreActionsV70Wrapped=true;
+    wrapped.__moreActionsV72Wrapped=true;
     window.renderTicketDashboard=wrapped;
   }
 
   wrap();retry();
   window.addEventListener('load',()=>{wrap();retry()},{once:true});
-  document.addEventListener('click',event=>{if(event.target.closest?.('#ticketsTab'))setTimeout(retry,0)},true);
+  document.addEventListener('click',event=>{
+    if(event.target.closest?.('#ticketsTab')){
+      openTicketIds.clear();
+      setTimeout(retry,0);
+    }
+  },true);
   document.addEventListener('parlay:dashboard-refreshed',retry);
 })();
