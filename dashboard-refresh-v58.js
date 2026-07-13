@@ -1,4 +1,4 @@
-/* DASHBOARD REFRESH V59 — one delegated refresh action and adjacent timestamp */
+/* DASHBOARD REFRESH V60 — one authoritative refresh controller */
 (() => {
   'use strict';
   const KEY='parlayTracker.savedTickets.v1';
@@ -13,53 +13,25 @@
     const style=document.createElement('style');
     style.id='dashboardRefreshV58Css';
     style.textContent=`
-      #dashboardView .dashboardToolbarV55{
-        grid-template-columns:minmax(0,1fr) auto auto auto!important;
-      }
-      #dashboardView .dashboardToolbarStatus{
-        grid-column:2!important;
-        justify-self:end!important;
-        text-align:right!important;
-        white-space:nowrap!important;
-      }
+      #dashboardView .dashboardToolbarV55{grid-template-columns:minmax(0,1fr) auto auto auto!important}
+      #dashboardView .dashboardToolbarStatus{grid-column:2!important;justify-self:end!important;text-align:right!important;white-space:nowrap!important}
       #refreshTicketsBtn{grid-column:3!important}
       #ticketSelectModeBtn{grid-column:4!important}
     `;
     document.head.appendChild(style);
   }
 
-  function datesFor(records){
-    const dates=[];
-    for(const record of records){
-      const t=record?.ticket||{};
-      if(t.date)dates.push(t.date);
-      for(const leg of t.legs||[])if(leg.date)dates.push(leg.date);
-    }
-    return [...new Set(dates)];
-  }
+  function datesFor(records){const dates=[];for(const record of records){const t=record?.ticket||{};if(t.date)dates.push(t.date);for(const leg of t.legs||[])if(leg.date)dates.push(leg.date)}return [...new Set(dates)]}
+  function detailsHtml(record){const C=window.ParlayTrackerCore,t=record.ticket||{};return (record.__evaluated||[]).map(leg=>{const x=leg.__live||C.statusObj('pending',''),game=leg.__game;const meta=t.type==='sgp'?[game?C.baseGameMeta(game):'']:[C.legGame(t,leg),game?C.baseGameMeta(game):''];return `<div class="dashboardLeg"><div><div class="dashboardLegLabel">${esc(leg.label||'Untitled')}</div><div class="dashboardLegMeta">${esc(meta.filter(Boolean).join(' · '))}</div></div><div class="dashboardLegRight"><div class="dashboardLegValue ${esc(x.valueClass||valueClass(x.state))}">${esc(x.value||'')}</div><span class="dashboardLegStatus ${stateClass(x.state)}">${esc(stateClass(x.state))}</span></div></div>`}).join('')||'<div class="dashboardDetailsMessage">No legs in this ticket.</div>'}
 
-  function detailsHtml(record){
-    const C=window.ParlayTrackerCore,t=record.ticket||{};
-    return (record.__evaluated||[]).map(leg=>{
-      const x=leg.__live||C.statusObj('pending',''),game=leg.__game;
-      const meta=t.type==='sgp'?[game?C.baseGameMeta(game):'']:[C.legGame(t,leg),game?C.baseGameMeta(game):''];
-      return `<div class="dashboardLeg"><div><div class="dashboardLegLabel">${esc(leg.label||'Untitled')}</div><div class="dashboardLegMeta">${esc(meta.filter(Boolean).join(' · '))}</div></div><div class="dashboardLegRight"><div class="dashboardLegValue ${esc(x.valueClass||valueClass(x.state))}">${esc(x.value||'')}</div><span class="dashboardLegStatus ${stateClass(x.state)}">${esc(stateClass(x.state))}</span></div></div>`;
-    }).join('')||'<div class="dashboardDetailsMessage">No legs in this ticket.</div>';
-  }
-
-  async function refreshOnce(){
+  window.__refreshDashboardTickets=async function(){
     if(window.__dashboardRefreshRunning)return;
     const status=document.querySelector('.dashboardToolbarStatus');
-    const openCards=[...document.querySelectorAll('#ticketList .savedTicket')].filter(card=>{
-      const panel=card.querySelector('.savedTicketDetails');
-      return panel&&!panel.classList.contains('hide');
-    });
+    const openCards=[...document.querySelectorAll('#ticketList .savedTicket')].filter(card=>{const panel=card.querySelector('.savedTicketDetails');return panel&&!panel.classList.contains('hide')});
     if(!openCards.length){if(status)status.textContent='Open a ticket to refresh its legs.';return}
-
     const byId=new Map(load().map(record=>[record.id,record]));
     const targets=openCards.map(card=>({panel:card.querySelector('.savedTicketDetails'),record:byId.get(card.dataset.ticketId)})).filter(x=>x.record);
     if(!targets.length)return;
-
     window.__dashboardRefreshRunning=true;
     if(status)status.textContent='Refreshing…';
     targets.forEach(x=>x.panel.innerHTML='<div class="dashboardDetailsMessage">Refreshing leg status…</div>');
@@ -75,14 +47,7 @@
       targets.forEach(x=>x.panel.innerHTML=`<div class="dashboardDetailsMessage">Unable to refresh leg status: ${esc(error?.message||error)}</div>`);
       if(status)status.textContent='Refresh failed';
     }finally{window.__dashboardRefreshRunning=false}
-  }
+  };
 
   addCss();
-  document.addEventListener('click',event=>{
-    const button=event.target.closest?.('#refreshTicketsBtn');
-    if(!button)return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    refreshOnce();
-  },true);
 })();
