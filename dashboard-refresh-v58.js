@@ -1,4 +1,4 @@
-/* DASHBOARD REFRESH V62 — refresh legs and ticket-level state together */
+/* DASHBOARD REFRESH V63 — refresh legs and ticket-level state together */
 (() => {
   'use strict';
   const KEY='parlayTracker.savedTickets.v1';
@@ -45,12 +45,14 @@
   window.__refreshDashboardTickets=async function(){
     if(window.__dashboardRefreshRunning)return;
     const status=document.querySelector('.dashboardToolbarStatus');
+    const refreshButton=document.getElementById('refreshTicketsBtn');
     const openCards=[...document.querySelectorAll('#ticketList .savedTicket')].filter(card=>{const panel=card.querySelector('.savedTicketDetails');return panel&&!panel.classList.contains('hide')});
     if(!openCards.length){if(status)status.textContent='Open a ticket to refresh its legs.';return}
     const list=load(),byId=new Map(list.map(record=>[record.id,record]));
     const targets=openCards.map(card=>({card,panel:card.querySelector('.savedTicketDetails'),record:byId.get(card.dataset.ticketId)})).filter(x=>x.record);
     if(!targets.length)return;
     window.__dashboardRefreshRunning=true;
+    if(refreshButton){refreshButton.disabled=true;refreshButton.classList.add('refreshing');refreshButton.textContent='Refreshing'}
     if(status)status.textContent='Refreshing…';
     targets.forEach(x=>x.panel.innerHTML='<div class="dashboardDetailsMessage">Refreshing leg status…</div>');
     try{
@@ -72,7 +74,11 @@
     }catch(error){
       targets.forEach(x=>x.panel.innerHTML=`<div class="dashboardDetailsMessage">Unable to refresh leg status: ${esc(error?.message||error)}</div>`);
       if(status)status.textContent='Refresh failed';
-    }finally{window.__dashboardRefreshRunning=false}
+    }finally{
+      window.__dashboardRefreshRunning=false;
+      if(refreshButton){refreshButton.disabled=false;refreshButton.classList.remove('refreshing');refreshButton.textContent='Refresh'}
+      document.dispatchEvent(new CustomEvent('parlay:dashboard-refreshed'));
+    }
   };
 
   addCss();
