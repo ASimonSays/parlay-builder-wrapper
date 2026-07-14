@@ -1,4 +1,4 @@
-/* DASHBOARD MORE ACTIONS V72 — full-width View row with persistent per-ticket More state */
+/* DASHBOARD MORE ACTIONS V73 — compact 75/25 View/More row with two-row expanded actions */
 (() => {
   'use strict';
 
@@ -7,9 +7,9 @@
   window.__dashboardMoreOpenIds=openTicketIds;
 
   function addCss(){
-    if(document.getElementById('dashboardMoreActionsV70Css'))return;
+    if(document.getElementById('dashboardMoreActionsV73Css'))return;
     const style=document.createElement('style');
-    style.id='dashboardMoreActionsV70Css';
+    style.id='dashboardMoreActionsV73Css';
     style.textContent=`
       #ticketList .savedActions.moreActionsEnabled{
         display:grid!important;
@@ -24,38 +24,25 @@
         margin:0!important;
       }
       #ticketList .savedActions.moreActionsEnabled>.savedActionView{
-        grid-column:1/13!important;
+        grid-column:1/10!important;
         grid-row:1!important;
         min-height:40px!important;
       }
-      #ticketList .savedActions.moreActionsEnabled>.savedActionCopy{
-        grid-column:1/5!important;
-        grid-row:2!important;
-      }
-      #ticketList .savedActions.moreActionsEnabled>.savedActionShare{
-        grid-column:5/9!important;
-        grid-row:2!important;
-      }
       #ticketList .savedActions.moreActionsEnabled>.savedActionsMoreToggle{
-        grid-column:9/13!important;
-        grid-row:2!important;
-      }
-      #ticketList .savedActions.moreActionsEnabled>.savedActionCopy,
-      #ticketList .savedActions.moreActionsEnabled>.savedActionShare,
-      #ticketList .savedActions.moreActionsEnabled>.savedActionsMoreToggle{
-        min-height:33px!important;
+        grid-column:10/13!important;
+        grid-row:1!important;
+        min-height:40px!important;
         padding:5px 4px!important;
         font-size:9px!important;
         line-height:1!important;
         letter-spacing:.04em!important;
         white-space:nowrap!important;
       }
-      #ticketList .savedActions.moreActionsEnabled>.savedActionSecondary{
+      #ticketList .savedActions.moreActionsEnabled>.savedActionExpanded{
         display:none!important;
-        grid-row:3!important;
         min-width:0!important;
-        min-height:39px!important;
-        padding:5px 2px!important;
+        min-height:38px!important;
+        padding:5px 3px!important;
         font-size:8px!important;
         line-height:1.08!important;
         letter-spacing:.025em!important;
@@ -63,11 +50,15 @@
         overflow-wrap:normal!important;
         word-break:normal!important;
       }
-      #ticketList .savedActions.moreActionsEnabled>.savedActionSecondary1{grid-column:1/4!important}
-      #ticketList .savedActions.moreActionsEnabled>.savedActionSecondary2{grid-column:4/7!important}
-      #ticketList .savedActions.moreActionsEnabled>.savedActionSecondary3{grid-column:7/10!important}
-      #ticketList .savedActions.moreActionsEnabled>.savedActionSecondary4{grid-column:10/13!important}
-      #ticketList .savedActions.moreActionsEnabled.moreOpen>.savedActionSecondary{display:flex!important}
+      #ticketList .savedActions.moreActionsEnabled.moreOpen>.savedActionExpanded{display:flex!important}
+
+      #ticketList .savedActions.moreActionsEnabled>.savedActionCopy{grid-column:1/5!important;grid-row:2!important}
+      #ticketList .savedActions.moreActionsEnabled>.savedActionShare{grid-column:5/9!important;grid-row:2!important}
+      #ticketList .savedActions.moreActionsEnabled>.savedActionStatus{grid-column:9/13!important;grid-row:2!important}
+      #ticketList .savedActions.moreActionsEnabled>.savedActionDuplicate{grid-column:1/5!important;grid-row:3!important}
+      #ticketList .savedActions.moreActionsEnabled>.savedActionEdit{grid-column:5/9!important;grid-row:3!important}
+      #ticketList .savedActions.moreActionsEnabled>.savedActionDelete{grid-column:9/13!important;grid-row:3!important}
+
       #ticketList .savedActionsMoreToggle{
         color:#26303B!important;
         background:linear-gradient(180deg,#E9EDF2,#C5CED9 55%,#8C98A8)!important;
@@ -82,17 +73,13 @@
       }
       #ticketList .savedActionsMoreToggle[aria-expanded="true"] .moreChevron{transform:rotate(180deg)}
       @media(min-width:600px){
-        #ticketList .savedActions.moreActionsEnabled>.savedActionCopy,
-        #ticketList .savedActions.moreActionsEnabled>.savedActionShare,
         #ticketList .savedActions.moreActionsEnabled>.savedActionsMoreToggle{font-size:10px!important}
-        #ticketList .savedActions.moreActionsEnabled>.savedActionSecondary{font-size:9px!important}
+        #ticketList .savedActions.moreActionsEnabled>.savedActionExpanded{font-size:9px!important}
       }
       @media(max-width:390px){
         #ticketList .savedActions.moreActionsEnabled{column-gap:5px!important;row-gap:5px!important}
-        #ticketList .savedActions.moreActionsEnabled>.savedActionCopy,
-        #ticketList .savedActions.moreActionsEnabled>.savedActionShare,
-        #ticketList .savedActions.moreActionsEnabled>.savedActionsMoreToggle{min-height:32px!important;padding:4px 3px!important;font-size:8px!important}
-        #ticketList .savedActions.moreActionsEnabled>.savedActionSecondary{min-height:38px!important;font-size:7.5px!important;padding:4px 1px!important}
+        #ticketList .savedActions.moreActionsEnabled>.savedActionsMoreToggle{font-size:8px!important;padding:4px 3px!important}
+        #ticketList .savedActions.moreActionsEnabled>.savedActionExpanded{min-height:37px!important;font-size:7.5px!important;padding:4px 1px!important}
       }
     `;
     document.head.appendChild(style);
@@ -114,7 +101,8 @@
     button.classList.remove(
       'savedActionView','savedActionCopy','savedActionShare','savedActionPrimary',
       'savedActionSecondary','savedActionSecondary1','savedActionSecondary2',
-      'savedActionSecondary3','savedActionSecondary4'
+      'savedActionSecondary3','savedActionSecondary4','savedActionExpanded',
+      'savedActionStatus','savedActionDuplicate','savedActionEdit','savedActionDelete'
     );
     button.classList.add(...classes);
   }
@@ -128,10 +116,10 @@
     const copy=buttons.find(button=>label(button)==='COPY CODE');
     const share=buttons.find(button=>label(button)==='SHARE');
     const duplicate=buttons.find(button=>label(button)==='DUPLICATE');
-    const complete=buttons.find(button=>['COMPLETE','MARK ACTIVE'].includes(label(button)));
+    const status=buttons.find(button=>['COMPLETE','MARK ACTIVE'].includes(label(button)));
     const edit=buttons.find(button=>label(button)==='EDIT');
     const del=buttons.find(button=>label(button)==='DELETE');
-    if(!view||!copy||!share||!duplicate||!complete||!edit||!del)return false;
+    if(!view||!copy||!share||!duplicate||!status||!edit||!del)return false;
 
     const ticketId=String(card.dataset.ticketId||'');
     const shouldOpen=ticketId?openTicketIds.has(ticketId):actions.classList.contains('moreOpen');
@@ -140,7 +128,7 @@
     copy.textContent='Copy Code';
     share.textContent='Share';
     duplicate.textContent='Duplicate';
-    complete.textContent=label(complete)==='MARK ACTIVE'?'Mark Active':'Complete';
+    status.textContent=label(status)==='MARK ACTIVE'?'Mark Active':'Complete';
     edit.textContent='Edit';
     del.textContent='Delete';
 
@@ -152,14 +140,14 @@
     }
 
     setClass(view,'savedActionView','savedActionPrimary');
-    setClass(copy,'savedActionCopy','savedActionPrimary');
-    setClass(share,'savedActionShare','savedActionPrimary');
-    setClass(duplicate,'savedActionSecondary','savedActionSecondary1');
-    setClass(complete,'savedActionSecondary','savedActionSecondary2');
-    setClass(edit,'savedActionSecondary','savedActionSecondary3');
-    setClass(del,'savedActionSecondary','savedActionSecondary4');
+    setClass(copy,'savedActionExpanded','savedActionCopy');
+    setClass(share,'savedActionExpanded','savedActionShare');
+    setClass(status,'savedActionExpanded','savedActionStatus');
+    setClass(duplicate,'savedActionExpanded','savedActionDuplicate');
+    setClass(edit,'savedActionExpanded','savedActionEdit');
+    setClass(del,'savedActionExpanded','savedActionDelete');
 
-    actions.replaceChildren(view,copy,share,toggle,duplicate,complete,edit,del);
+    actions.replaceChildren(view,toggle,copy,share,status,duplicate,edit,del);
     actions.classList.add('moreActionsEnabled');
     actions.classList.toggle('moreOpen',shouldOpen);
     actions.dataset.moreReady='1';
@@ -195,13 +183,13 @@
 
   function wrap(){
     const original=window.renderTicketDashboard;
-    if(typeof original!=='function'||original.__moreActionsV72Wrapped)return;
+    if(typeof original!=='function'||original.__moreActionsV73Wrapped)return;
     const wrapped=function(...args){
       const out=original.apply(this,args);
       requestAnimationFrame(retry);
       return out;
     };
-    wrapped.__moreActionsV72Wrapped=true;
+    wrapped.__moreActionsV73Wrapped=true;
     window.renderTicketDashboard=wrapped;
   }
 
