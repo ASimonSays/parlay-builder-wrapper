@@ -1,4 +1,4 @@
-/* TICKET_SHARING_V41 */
+/* TICKET_SHARING_V42 */
 (() => {
   'use strict';
 
@@ -207,14 +207,21 @@
   }
   function parseInput(){
     const text=clean(document.getElementById('ticketShareInput').value);
+    const selectedSportsbook=clean(document.getElementById('ticketImportSportsbook')?.value);
     if(!text)throw new Error('Paste a ticket code first.');
     if(text.startsWith('http://')||text.startsWith('https://')){
       const u=new URL(text),p=new URLSearchParams(u.hash.slice(1)),code=p.get('share');
       if(!code)throw new Error('That link does not contain a shared ticket.');
-      return decodePackage(code);
+      const pkg=decodePackage(code);
+      if(selectedSportsbook)pkg.sportsbook=selectedSportsbook;
+      return pkg;
     }
-    if(text.startsWith(SHARE_PREFIX))return decodePackage(text);
-    return {sportsbook:'Other',ticket:parseScriptableCode(text)};
+    if(text.startsWith(SHARE_PREFIX)){
+      const pkg=decodePackage(text);
+      if(selectedSportsbook)pkg.sportsbook=selectedSportsbook;
+      return pkg;
+    }
+    return {sportsbook:selectedSportsbook||'Other',ticket:parseScriptableCode(text)};
   }
   function primaryAction(){
     const status=document.getElementById('ticketShareStatus');status.textContent='';
