@@ -1,8 +1,9 @@
-/* DASHBOARD MORE ACTIONS V74 — shorter 75/25 View/More row with larger expanded-action labels */
+/* DASHBOARD MORE ACTIONS V75 — resilient post-import enhancement */
 (() => {
   'use strict';
 
   let retryTimer=null;
+  let ticketListObserver=null;
   const openTicketIds=window.__dashboardMoreOpenIds instanceof Set?window.__dashboardMoreOpenIds:new Set();
   window.__dashboardMoreOpenIds=openTicketIds;
 
@@ -113,6 +114,7 @@
   function enhance(card){
     const actions=card.querySelector('.savedActions');
     if(!actions)return false;
+    if(actions.dataset.moreReady==='1'&&actions.classList.contains('moreActionsEnabled')&&actions.querySelector(':scope > .savedActionsMoreToggle'))return true;
 
     const buttons=[...actions.querySelectorAll(':scope > button')].filter(button=>!button.classList.contains('savedActionsMoreToggle'));
     const view=buttons.find(button=>label(button)==='VIEW');
@@ -172,8 +174,16 @@
     return [...document.querySelectorAll('#ticketList .savedTicket')].map(enhance);
   }
 
+  function observeTicketList(){
+    const list=document.getElementById('ticketList');
+    if(!list||ticketListObserver)return;
+    ticketListObserver=new MutationObserver(()=>retry());
+    ticketListObserver.observe(list,{childList:true,subtree:true});
+  }
+
   function retry(){
     clearTimeout(retryTimer);
+    observeTicketList();
     let attempts=0;
     const run=()=>{
       const results=apply();
@@ -197,7 +207,7 @@
   }
 
   wrap();retry();
-  window.addEventListener('load',()=>{wrap();retry()},{once:true});
+  window.addEventListener('load',()=>{wrap();observeTicketList();retry()},{once:true});
   document.addEventListener('click',event=>{
     if(event.target.closest?.('#ticketsTab')){
       openTicketIds.clear();
