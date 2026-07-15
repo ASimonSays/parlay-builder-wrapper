@@ -1,4 +1,4 @@
-/* OPTIONAL_SPORTSBOOK_V44 */
+/* OPTIONAL_SPORTSBOOK_V45 */
 (() => {
   'use strict';
 
@@ -100,6 +100,14 @@
     requestAnimationFrame(syncImportPreviewBook);
   }
 
+  function installImportPreviewHook(){
+    document.addEventListener('click',event=>{
+      const button=event.target.closest('#ticketSharePrimary');
+      if(!button||!/preview ticket/i.test(clean(button.textContent)))return;
+      syncImportPreviewBook();
+    });
+  }
+
   function installImportSaveHook(){
     document.addEventListener('click',event=>{
       const button=event.target.closest('#ticketSharePrimary');
@@ -183,6 +191,7 @@
   function start(){
     installBuilderHooks();
     ensureImportBookSelect();
+    installImportPreviewHook();
     installImportSaveHook();
     installShareInterception();
     installRenderHook();
