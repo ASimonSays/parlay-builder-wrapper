@@ -1,4 +1,4 @@
-/* OPTIONAL_SPORTSBOOK_V43 */
+/* OPTIONAL_SPORTSBOOK_V44 */
 (() => {
   'use strict';
 
@@ -190,11 +190,13 @@
 
     const modal=document.getElementById('ticketShareModal');
     if(modal){
+      let wasOpen=!modal.classList.contains('hide');
       const observer=new MutationObserver(()=>{
-        if(!modal.classList.contains('hide')&&!document.getElementById('ticketShareInput')?.value)resetImportBook();
-        decorateBlankBooks();
+        const isOpen=!modal.classList.contains('hide');
+        if(isOpen&&!wasOpen)resetImportBook();
+        wasOpen=isOpen;
       });
-      observer.observe(modal,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+      observer.observe(modal,{attributes:true,attributeFilter:['class']});
     }
   }
 
