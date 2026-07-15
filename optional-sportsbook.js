@@ -1,4 +1,4 @@
-/* OPTIONAL_SPORTSBOOK_V45 */
+/* OPTIONAL_SPORTSBOOK_V46 */
 (() => {
   'use strict';
 
@@ -104,8 +104,8 @@
     document.addEventListener('click',event=>{
       const button=event.target.closest('#ticketSharePrimary');
       if(!button||!/preview ticket/i.test(clean(button.textContent)))return;
-      syncImportPreviewBook();
-    });
+      queueMicrotask(syncImportPreviewBook);
+    },true);
   }
 
   function installImportSaveHook(){
