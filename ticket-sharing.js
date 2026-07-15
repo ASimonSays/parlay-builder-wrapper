@@ -1,4 +1,4 @@
-/* TICKET_SHARING_V43 */
+/* TICKET_SHARING_V44 */
 (() => {
   'use strict';
 
@@ -161,6 +161,18 @@
       .shareModalActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.shareModalStatus{min-height:18px;margin-top:8px;font-size:12px;font-weight:800;color:#8b3200;white-space:pre-line}
       .dashboardImportBtn{white-space:nowrap}
       body.ticketShareModalOpen{overflow:hidden}
+      #ticketList .savedActions.importActionsReady{display:grid!important;width:100%!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;column-gap:6px!important;row-gap:6px!important}
+      #ticketList .savedActions.importActionsReady>button{width:100%!important;min-width:0!important;margin:0!important}
+      #ticketList .savedActions.importActionsReady>.savedActionView{grid-column:1/10!important;grid-row:1!important;height:34px!important;min-height:34px!important;padding:4px!important}
+      #ticketList .savedActions.importActionsReady>.savedActionsMoreToggle{grid-column:10/13!important;grid-row:1!important;height:34px!important;min-height:34px!important;padding:3px 4px!important;white-space:nowrap!important}
+      #ticketList .savedActions.importActionsReady>.savedActionExpanded{display:none!important}
+      #ticketList .savedActions.importActionsReady.moreOpen>.savedActionExpanded{display:flex!important}
+      #ticketList .savedActions.importActionsReady>.savedActionCopy{grid-column:1/5!important;grid-row:2!important}
+      #ticketList .savedActions.importActionsReady>.savedActionShare{grid-column:5/9!important;grid-row:2!important}
+      #ticketList .savedActions.importActionsReady>.savedActionStatus{grid-column:9/13!important;grid-row:2!important}
+      #ticketList .savedActions.importActionsReady>.savedActionDuplicate{grid-column:1/5!important;grid-row:3!important}
+      #ticketList .savedActions.importActionsReady>.savedActionEdit{grid-column:5/9!important;grid-row:3!important}
+      #ticketList .savedActions.importActionsReady>.savedActionDelete{grid-column:9/13!important;grid-row:3!important}
     `;document.head.appendChild(style);
   }
 
@@ -244,6 +256,22 @@
     }catch(e){if(e?.name!=='AbortError'){try{await navigator.clipboard.writeText(url);alert('Share link copied.')}catch{alert(url)}}}
   }
 
+  function compactImportedActions(actions){
+    if(!actions||actions.classList.contains('importActionsReady'))return;
+    const buttons=[...actions.querySelectorAll(':scope > button')].filter(button=>!button.classList.contains('savedActionsMoreToggle'));
+    const label=button=>clean(button?.textContent).replace(/\s+/g,' ').toUpperCase();
+    const find=pattern=>buttons.find(button=>pattern.test(label(button)));
+    const view=find(/^VIEW$/),copy=find(/^COPY CODE$/),share=find(/^SHARE$/),duplicate=find(/^DUPLICATE$/),status=find(/^(COMPLETE|MARK ACTIVE)$/),edit=find(/^EDIT$/),del=find(/^DELETE$/);
+    if(!view||!copy||!share||!duplicate||!status||!edit||!del)return;
+    const toggle=document.createElement('button');
+    toggle.type='button';toggle.className='ghost savedActionsMoreToggle';toggle.innerHTML='More <span class="moreChevron">⌄</span>';toggle.setAttribute('aria-expanded','false');
+    const setClass=(button,...classes)=>{button.classList.remove('actionUse','actionChange');button.classList.add(...classes)};
+    setClass(view,'savedActionView');setClass(copy,'savedActionExpanded','savedActionCopy');setClass(share,'savedActionExpanded','savedActionShare');setClass(status,'savedActionExpanded','savedActionStatus');setClass(duplicate,'savedActionExpanded','savedActionDuplicate');setClass(edit,'savedActionExpanded','savedActionEdit');setClass(del,'savedActionExpanded','savedActionDelete');
+    actions.replaceChildren(view,toggle,copy,share,status,duplicate,edit,del);
+    actions.classList.add('importActionsReady','moreActionsEnabled');actions.classList.remove('moreOpen');actions.dataset.moreReady='1';
+    toggle.onclick=event=>{event.preventDefault();event.stopPropagation();const open=actions.classList.toggle('moreOpen');toggle.setAttribute('aria-expanded',String(open));toggle.innerHTML=`${open?'Less':'More'} <span class="moreChevron">⌄</span>`};
+  }
+
   function decorateDashboard(){
     let shareAdded=false;
     const actions=document.querySelector('.dashboardActions');
@@ -252,11 +280,14 @@
     }
     document.querySelectorAll('.savedTicket').forEach((card,index)=>{
       const record=load()[index],actionsBox=card.querySelector('.savedActions');
-      if(!record||!actionsBox||actionsBox.querySelector('.shareTicketBtn'))return;
-      const b=document.createElement('button');b.type='button';b.className='ghost shareTicketBtn';b.textContent='Share';b.addEventListener('click',()=>shareTicket(record.id));
-      const copy=[...actionsBox.querySelectorAll('button')].find(x=>/copy code/i.test(x.textContent));
-      if(copy)copy.insertAdjacentElement('afterend',b);else actionsBox.appendChild(b);
-      shareAdded=true;
+      if(!record||!actionsBox)return;
+      if(!actionsBox.querySelector('.shareTicketBtn')){
+        const b=document.createElement('button');b.type='button';b.className='ghost shareTicketBtn';b.textContent='Share';b.addEventListener('click',()=>shareTicket(record.id));
+        const copy=[...actionsBox.querySelectorAll('button')].find(x=>/copy code/i.test(x.textContent));
+        if(copy)copy.insertAdjacentElement('afterend',b);else actionsBox.appendChild(b);
+        shareAdded=true;
+      }
+      compactImportedActions(actionsBox);
     });
     if(shareAdded)document.dispatchEvent(new Event('parlay:dashboard-refreshed'));
   }
