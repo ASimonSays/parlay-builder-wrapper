@@ -1,4 +1,4 @@
-/* DASHBOARD LAYOUT V69 — compact toolbar and inline sportsbook badge */
+/* DASHBOARD LAYOUT V70 — supports native View links */
 (() => {
   'use strict';
 
@@ -66,7 +66,7 @@
     formatTicketHeading(card);
     const actions=card.querySelector('.savedActions');
     if(!actions||actions.dataset.moreReady==='1')return;
-    const buttons=[...actions.querySelectorAll(':scope > button')],find=pattern=>buttons.find(button=>pattern.test(normalizedText(button)));
+    const buttons=[...actions.querySelectorAll(':scope > button,:scope > a.navAction')],find=pattern=>buttons.find(button=>pattern.test(normalizedText(button)));
     [
       {button:find(/^VIEW$/),kind:'actionUse'},
       {button:find(/^COPY CODE$/),kind:'actionUse'},

@@ -1,4 +1,4 @@
-/* DASHBOARD MORE ACTIONS V76 — idempotent event-driven enhancement */
+/* DASHBOARD MORE ACTIONS V77 — supports native View links */
 (() => {
   'use strict';
 
@@ -115,7 +115,7 @@
     if(!actions)return false;
     if(actions.dataset.moreReady==='1'&&actions.classList.contains('moreActionsEnabled')&&actions.querySelector(':scope > .savedActionsMoreToggle'))return true;
 
-    const buttons=[...actions.querySelectorAll(':scope > button')].filter(button=>!button.classList.contains('savedActionsMoreToggle'));
+    const buttons=[...actions.querySelectorAll(':scope > button,:scope > a.navAction')].filter(button=>!button.classList.contains('savedActionsMoreToggle'));
     const view=buttons.find(button=>label(button)==='VIEW');
     const copy=buttons.find(button=>label(button)==='COPY CODE');
     const share=buttons.find(button=>label(button)==='SHARE');

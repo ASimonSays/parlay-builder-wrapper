@@ -1,4 +1,4 @@
-/* TICKET_SHARING_V44 */
+/* TICKET_SHARING_V45 */
 (() => {
   'use strict';
 
@@ -258,7 +258,7 @@
 
   function compactImportedActions(actions){
     if(!actions||actions.classList.contains('importActionsReady'))return;
-    const buttons=[...actions.querySelectorAll(':scope > button')].filter(button=>!button.classList.contains('savedActionsMoreToggle'));
+    const buttons=[...actions.querySelectorAll(':scope > button,:scope > a.navAction')].filter(button=>!button.classList.contains('savedActionsMoreToggle'));
     const label=button=>clean(button?.textContent).replace(/\s+/g,' ').toUpperCase();
     const find=pattern=>buttons.find(button=>pattern.test(label(button)));
     const view=find(/^VIEW$/),copy=find(/^COPY CODE$/),share=find(/^SHARE$/),duplicate=find(/^DUPLICATE$/),status=find(/^(COMPLETE|MARK ACTIVE)$/),edit=find(/^EDIT$/),del=find(/^DELETE$/);
