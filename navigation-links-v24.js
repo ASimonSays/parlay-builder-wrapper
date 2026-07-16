@@ -1,4 +1,4 @@
-/* Native ticket-view navigation V24 */
+/* Native ticket-view navigation V25 — reset live refresh identity on Close */
 (()=>{
   'use strict';
 
@@ -32,6 +32,7 @@
     dashboard?.classList.remove('hide');
     tabs?.classList.remove('hide');
     if(typeof window.renderTicketDashboard==='function')window.renderTicketDashboard();
+    window.dispatchEvent(new Event('parlay:viewchange'));
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
