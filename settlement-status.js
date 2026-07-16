@@ -1,4 +1,4 @@
-/* SETTLEMENT_STATUS_V71 */
+/* SETTLEMENT_STATUS_V72 — defer MLB timestamps to the event ledger */
 (() => {
   'use strict';
 
@@ -81,6 +81,12 @@
     if(active)return list.filter(r=>r.status!=='completed');
     return[];
   }
+  function usesMlbLedger(record){
+    const ticket=record?.ticket||{},ticketLeague=clean(ticket.league).toUpperCase();
+    if(ticketLeague)return ticketLeague==='MLB';
+    const leagues=(ticket.legs||[]).map(leg=>clean(leg.league).toUpperCase()).filter(Boolean);
+    return leagues.length?leagues.every(league=>league==='MLB'):true;
+  }
   function addStamp(card,record){
     card.querySelector('.settlementStamp')?.remove();
     if(!record?.settledAt)return;
@@ -109,7 +115,8 @@
       if(!outcome)return;
       if(record.liveOutcome!==outcome){record.liveOutcome=outcome;changed=true}
       if(SETTLED.has(outcome)){
-        if(!record.settledAt){record.settledAt=now;changed=true}
+        if(!record.settledAt&&!usesMlbLedger(record)){record.settledAt=now;record.settlementSource='refresh-time-fallback';changed=true}
+        if(usesMlbLedger(record)&&record.settlementSource!=='mlb-prop-ledger'){record.settlementSource='pending-mlb-ledger';changed=true}
         if(record.status!=='completed'&&!record.manualActiveOverride){
           record.status='completed';
           record.updatedAt=now;
@@ -133,6 +140,7 @@
       if(ready&&scanRenderedTickets()){
         clearInterval(scanTimer);
         scanTimer=null;
+        document.dispatchEvent(new CustomEvent('parlay:settlement-status-updated'));
       }else if(scanAttempts>=24){
         clearInterval(scanTimer);
         scanTimer=null;
@@ -215,4 +223,5 @@
   document.addEventListener('click',e=>{
     if(/^refresh$/i.test(clean(e.target?.textContent)))scheduleScan();
   },true);
+  document.addEventListener('parlay:tracker-refreshed',scheduleScan);
 })();
