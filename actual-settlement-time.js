@@ -1,4 +1,4 @@
-/* ACTUAL_SETTLEMENT_TIME_V40 */
+/* ACTUAL_SETTLEMENT_TIME_V41 — event-ledger timestamps with one scheduled pass */
 (() => {
   'use strict';
 
@@ -6,7 +6,8 @@
   const SCHEDULE='https://statsapi.mlb.com/api/v1/schedule';
   const FEED='https://statsapi.mlb.com/api/v1.1/game';
   const cache=new Map();
-  let running=false;
+  let running=false,runTimer=null;
+  window.__actualSettlementTimeLoaded=true;
 
   function clean(v){return String(v??'').trim()}
   function norm(v){return clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')}
@@ -283,8 +284,11 @@
     }finally{running=false}
   }
 
-  function schedule(){setTimeout(run,900);setTimeout(run,2600)}
-  window.addEventListener('load',schedule);
-  window.addEventListener('hashchange',schedule);
-  document.addEventListener('click',e=>{if(/^refresh$/i.test(clean(e.target?.textContent)))schedule()},true);
+  function schedule(delay=0){clearTimeout(runTimer);runTimer=setTimeout(run,delay)}
+  window.__runActualSettlementTime=run;
+  window.__scheduleActualSettlementTime=schedule;
+  window.addEventListener('load',()=>schedule(0),{once:true});
+  window.addEventListener('hashchange',()=>schedule(0));
+  document.addEventListener('parlay:settlement-status-updated',()=>schedule(0));
+  if(document.readyState!=='loading')schedule(0);
 })();
