@@ -1,4 +1,4 @@
-/* TICKET DASHBOARD DETAILS V71 */
+/* TICKET DASHBOARD DETAILS V72 — labeled wager and leg disclosure controls */
 (() => {
   'use strict';
   const KEY='parlayTracker.savedTickets.v1';
@@ -19,8 +19,8 @@
     style.id='ticketDashboardDetailsCss';
     style.textContent=`
       .savedTicket{position:relative}.savedTicketTop{align-items:center}
-      .ticketExpandBtn{flex:0 0 auto;width:38px;height:38px;padding:0;border-radius:50%;font-size:25px;line-height:1;letter-spacing:0;text-transform:none;transition:transform .18s ease}
-      .ticketExpandBtn[aria-expanded="true"]{transform:rotate(90deg)}
+      .ticketExpandBtn{flex:0 0 auto;width:94px;min-width:94px;height:38px;padding:6px 7px;border-radius:8px;font-size:8.5px;font-weight:900;line-height:1;letter-spacing:.055em;text-transform:uppercase;white-space:nowrap}
+      .ticketExpandBtn .ticketExpandShort{display:none}
       .savedTicketDetails{margin-top:10px;padding:8px 10px 4px;border-radius:9px;background:rgba(255,255,255,.48);box-shadow:inset 0 1px 4px rgba(0,0,0,.15)}
       .savedTicketDetails.hide{display:none!important}
       .dashboardLeg{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:10px 0;border-top:1px solid rgba(0,0,0,.1)}
@@ -45,7 +45,8 @@
       #standaloneView .liveLegMeta{margin-top:2px!important;font-size:11px!important;font-weight:800!important;line-height:1.2!important;color:#4f5b69!important;letter-spacing:.005em!important}
       #standaloneView .liveLegValue{font-size:13px!important;min-width:48px!important}#standaloneView .liveStatus{margin-top:3px!important;padding:3px 6px!important;font-size:8px!important}
       #standaloneView .liveLegTop{gap:10px!important}#standaloneView .standaloneTools{margin-bottom:6px!important}#standaloneView .dashboardHeader{margin-bottom:6px!important}
-      @media(max-width:390px){.dashboardToolbarV55{grid-template-columns:minmax(0,1fr) 64px 80px 54px;gap:5px}.dashboardToolbarV55 button{padding:7px 3px;font-size:8px}.dashboardToolbarStatus{font-size:8px}}
+      @media(max-width:390px){.dashboardToolbarV55{grid-template-columns:minmax(0,1fr) 64px 80px 54px;gap:5px}.dashboardToolbarV55 button{padding:7px 3px;font-size:8px}.dashboardToolbarStatus{font-size:8px}.ticketExpandBtn{width:88px;min-width:88px;padding:6px 5px;font-size:8px;letter-spacing:.035em}}
+      @media(max-width:340px){.ticketExpandBtn{width:58px;min-width:58px}.ticketExpandBtn .ticketExpandLong{display:none}.ticketExpandBtn .ticketExpandShort{display:inline}}
       @media(min-width:600px){.dashboardLegLabel{font-size:15px}.dashboardLegMeta{font-size:13px}#standaloneView .liveLegLabel{font-size:15px!important}#standaloneView .liveLegMeta{font-size:12px!important}}
     `;
     document.head.appendChild(style);
@@ -64,12 +65,20 @@
     if(status&&/^Open(?: a)? ticket/i.test(String(status.textContent||'').trim()))status.textContent='';
   }
 
+  function isStraight(record){return String(record?.ticket?.type||'').toLowerCase()==='straight'}
+  function syncExpandButton(button,record,open){
+    const straight=isStraight(record),noun=straight?'Wager':'Legs',verb=open?'Hide':'View',symbol=open?'⌄':'>';
+    button.innerHTML=`<span class="ticketExpandLong">${verb} ${noun} ${symbol}</span><span class="ticketExpandShort">${verb} ${symbol}</span>`;
+    button.setAttribute('aria-expanded',String(open));
+    button.setAttribute('aria-label',`${verb} ${straight?'wager':'ticket legs'}`);
+  }
+
   function updateExpandAllButton(){
     const button=document.getElementById('toggleAllTicketsBtn');
     if(!button)return;
     const anyOpen=expandedIds.size>0;
     button.textContent=anyOpen?'Collapse All':'Expand All';
-    button.setAttribute('aria-label',anyOpen?'Collapse all ticket legs':'Expand all ticket legs');
+    button.setAttribute('aria-label',anyOpen?'Collapse all ticket details':'Expand all ticket details');
     button.setAttribute('aria-pressed',String(anyOpen));
     if(anyOpen)clearOpenTicketHint();
   }
@@ -77,21 +86,20 @@
   function toggle(id,button,panel){
     const open=!expandedIds.has(id);
     if(open)expandedIds.add(id);else expandedIds.delete(id);
-    button.setAttribute('aria-expanded',String(open));
-    button.setAttribute('aria-label',open?'Hide ticket legs':'Show ticket legs');
+    syncExpandButton(button,load().find(record=>record.id===id),open);
     panel.classList.toggle('hide',!open);
     updateExpandAllButton();
     if(open)loadDetails(id,panel,true);
   }
 
   function setAllExpanded(open){
-    const cards=[...document.querySelectorAll('#ticketList .savedTicket')];
+    const cards=[...document.querySelectorAll('#ticketList .savedTicket')],records=new Map(load().map(record=>[record.id,record]));
     if(open){clearOpenTicketHint();window.ParlayTrackerSources?.resetTrackingCaches?.()}
     cards.forEach(card=>{
       const id=card.dataset.ticketId,button=card.querySelector('.ticketExpandBtn'),panel=card.querySelector('.savedTicketDetails');
       if(!id||!button||!panel)return;
-      if(open){expandedIds.add(id);button.setAttribute('aria-expanded','true');button.setAttribute('aria-label','Hide ticket legs');panel.classList.remove('hide');loadDetails(id,panel,false)}
-      else{expandedIds.delete(id);button.setAttribute('aria-expanded','false');button.setAttribute('aria-label','Show ticket legs');panel.classList.add('hide')}
+      if(open){expandedIds.add(id);syncExpandButton(button,records.get(id),true);panel.classList.remove('hide');loadDetails(id,panel,false)}
+      else{expandedIds.delete(id);syncExpandButton(button,records.get(id),false);panel.classList.add('hide')}
     });
     updateExpandAllButton();
   }
@@ -126,7 +134,7 @@
       if(card.dataset.detailsReady==='1')return;
       card.dataset.detailsReady='1';
       const top=card.querySelector('.savedTicketTop');if(!top)return;
-      const button=document.createElement('button');button.type='button';button.className='ghost ticketExpandBtn';button.textContent='›';button.setAttribute('aria-label',expandedIds.has(record.id)?'Hide ticket legs':'Show ticket legs');button.setAttribute('aria-expanded',String(expandedIds.has(record.id)));top.appendChild(button);
+      const button=document.createElement('button');button.type='button';button.className='ghost ticketExpandBtn';syncExpandButton(button,record,expandedIds.has(record.id));top.appendChild(button);
       const panel=document.createElement('div');panel.className='savedTicketDetails'+(expandedIds.has(record.id)?'':' hide');const actions=card.querySelector('.savedActions');card.insertBefore(panel,actions||null);
       button.addEventListener('click',()=>toggle(record.id,button,panel));
       if(expandedIds.has(record.id))loadDetails(record.id,panel,true);
