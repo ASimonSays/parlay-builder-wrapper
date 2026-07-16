@@ -28,6 +28,7 @@
       #ticketSelectModeBtn{grid-column:3!important;grid-row:2!important;width:100%!important}
       #ticketSortFilterBtn{grid-column:4!important;grid-row:2!important;width:42px!important;min-width:42px!important;height:34px!important;min-height:34px!important;padding:6px!important;display:flex!important;align-items:center!important;justify-content:center!important}
       #deleteSelectedTicketsBtn{grid-column:1/-1!important;grid-row:3!important}
+      #dashboardView .ticketExpandBtn{width:94px!important;min-width:94px!important;height:38px!important;min-height:38px!important;padding:6px 7px!important;border-radius:8px!important;font-size:8.5px!important;line-height:1!important;letter-spacing:.055em!important;color:#26303B!important;background:linear-gradient(180deg,#E9EDF2,#C5CED9 55%,#8C98A8)!important;border-color:rgba(93,105,120,.46)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 3px 6px rgba(0,0,0,.13)!important}
       #ticketSortFilterBtn.filterActive{border-color:#9B6613!important;background:linear-gradient(180deg,#FFE69A,#D49A27 58%,#9A6310)!important;box-shadow:inset 0 0 0 2px rgba(255,239,174,.58),0 4px 8px rgba(121,78,11,.28)!important}
       .sortFilterGlyph{display:flex;width:24px;height:19px;flex-direction:column;justify-content:space-between;align-items:flex-end}
       .sortFilterGlyph span{display:block;height:3px;border-radius:3px;background:#26303B;box-shadow:0 1px 0 rgba(255,255,255,.48)}
@@ -43,9 +44,8 @@
       .ticketSortGroup{margin:12px 0;padding:11px;border:1px solid rgba(92,104,120,.25);border-radius:11px;background:rgba(255,255,255,.52)}
       .ticketSortGroup legend{padding:0 5px;color:#4d5866;font-size:10px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}
       .ticketSortOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-      .ticketSortOptions.outcomes{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .ticketSortOptions.outcomes{grid-template-columns:minmax(0,.9fr) minmax(0,.9fr) minmax(0,1.2fr)}
       .ticketSortOption{display:flex;align-items:center;gap:7px;min-height:39px;padding:7px 8px;border:1px solid rgba(93,105,120,.34);border-radius:8px;background:rgba(247,249,252,.74);font-size:11px;font-weight:850}
-      .ticketSortOption.compactLabel{font-size:10.5px}
       .ticketSortOption input{width:17px;height:17px;margin:0;accent-color:#a76f18}
       .ticketSortActions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:13px}
       .ticketSortActions button{width:100%;min-width:0;padding:10px 5px;font-size:10px}
@@ -54,8 +54,10 @@
         #dashboardView .dashboardHeader h2{grid-row:1!important}
         #dashboardView .dashboardActions{grid-row:2!important}
         #dashboardView .dashboardToolbarV55{gap:5px!important}
-        .ticketSortPanel{padding:13px}.ticketSortOptions.outcomes{grid-template-columns:repeat(2,minmax(0,1fr))}.ticketSortOption{font-size:10px;padding:6px}.ticketSortOption.compactLabel{font-size:9.5px}.ticketSortActions{gap:6px}
+        #dashboardView .ticketExpandBtn{width:88px!important;min-width:88px!important;padding:6px 5px!important;font-size:8px!important;letter-spacing:.035em!important}
+        .ticketSortPanel{padding:13px}.ticketSortOption{font-size:10px;padding:6px}.ticketSortActions{gap:6px}
       }
+      @media(max-width:340px){.ticketSortOptions.outcomes{grid-template-columns:repeat(2,minmax(0,1fr))}#dashboardView .ticketExpandBtn{width:58px!important;min-width:58px!important}}
     `;
     document.head.appendChild(style);
   }
@@ -174,11 +176,11 @@
       </div></fieldset>
       <fieldset class="ticketSortGroup"><legend>Show</legend><div class="ticketSortOptions outcomes">
         <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="all">All</label>
-        <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="active">Active</label>
-        <label class="ticketSortOption compactLabel"><input type="radio" name="ticket-filter" value="completed">Complete</label>
         <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="won">Won</label>
-        <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="lost">Lost</label>
+        <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="active">Active</label>
         <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="push">Push</label>
+        <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="lost">Lost</label>
+        <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="completed">Complete</label>
       </div></fieldset>
       <div class="ticketSortActions"><button id="ticketSortReset" class="ghost" type="button">Clear</button><button id="ticketSortCancel" class="ghost" type="button">Cancel</button><button id="ticketSortApply" type="button">Apply</button></div></div>`;
     document.body.appendChild(modal);syncMenu();
