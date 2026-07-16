@@ -1,4 +1,4 @@
-/* ACTUAL_SETTLEMENT_TIME_V42 — MLB and basketball event-ledger timestamps */
+/* ACTUAL_SETTLEMENT_TIME_V43 — calculate and repaint settlement timestamps from My Tickets */
 (() => {
   'use strict';
 
@@ -7,7 +7,7 @@
   const FEED='https://statsapi.mlb.com/api/v1.1/game';
   const ESPN='https://site.api.espn.com/apis/site/v2/sports';
   const cache=new Map();
-  let running=false,runTimer=null;
+  let running=false,rerunRequested=false,runTimer=null;
   window.__actualSettlementTimeLoaded=true;
 
   function clean(v){return String(v??'').trim()}
@@ -331,7 +331,7 @@
   }
 
   async function run(){
-    if(running)return;running=true;
+    if(running){rerunRequested=true;return}running=true;
     try{
       const list=load();let changed=false;
       for(const record of list){
@@ -353,7 +353,10 @@
       }
       if(changed)store(list);
       refreshVisibleStamps(list);
-    }finally{running=false}
+    }finally{
+      running=false;
+      if(rerunRequested){rerunRequested=false;schedule(0)}
+    }
   }
 
   function schedule(delay=0){clearTimeout(runTimer);runTimer=setTimeout(run,delay)}
@@ -362,5 +365,6 @@
   window.addEventListener('load',()=>schedule(0),{once:true});
   window.addEventListener('hashchange',()=>schedule(0));
   document.addEventListener('parlay:settlement-status-updated',()=>schedule(0));
+  document.addEventListener('parlay:dashboard-refreshed',()=>schedule(0));
   if(document.readyState!=='loading')schedule(0);
 })();
