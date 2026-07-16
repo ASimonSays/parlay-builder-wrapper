@@ -67,7 +67,7 @@
 
   function isStraight(record){return String(record?.ticket?.type||'').toLowerCase()==='straight'}
   function syncExpandButton(button,record,open){
-    const straight=isStraight(record),noun=straight?'Wager':'Legs',verb=open?'Hide':'View',symbol=open?'⌄':'>';
+    const straight=isStraight(record),noun=straight?'Wager':'Legs',verb=open?'Hide':'View',symbol=open?'^':'⌄';
     button.innerHTML=`<span class="ticketExpandLong">${verb} ${noun} ${symbol}</span><span class="ticketExpandShort">${verb} ${symbol}</span>`;
     button.setAttribute('aria-expanded',String(open));
     button.setAttribute('aria-label',`${verb} ${straight?'wager':'ticket legs'}`);
