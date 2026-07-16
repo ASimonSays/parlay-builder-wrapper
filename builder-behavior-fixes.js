@@ -181,8 +181,18 @@
       if(index<0)return;
       const src=list[index],now=new Date().toISOString(),copy=JSON.parse(JSON.stringify(src));
       copy.id=globalThis.crypto?.randomUUID?.()||('ticket-'+Date.now()+'-'+Math.random().toString(36).slice(2,8));
+      copy.savedAt=now;
       copy.createdAt=now;
       copy.updatedAt=now;
+      copy.status='active';
+      delete copy.liveOutcome;
+      delete copy.settledAt;
+      delete copy.settlementSource;
+      delete copy.settlementReason;
+      delete copy.settlementLegIndexes;
+      delete copy.legSettlements;
+      delete copy.autoCompleted;
+      delete copy.manualActiveOverride;
       if(copy.ticket)copy.ticket.title=(copy.ticket.title||'Untitled')+' Copy';
       if(copy.canonical)copy.canonical.title=(copy.canonical.title||'Untitled')+' Copy';
       list.splice(index+1,0,copy);
