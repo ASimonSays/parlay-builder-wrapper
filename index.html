@@ -52,6 +52,8 @@
     html=html.replace('./builder-behavior-fixes.js?v=82','./builder-behavior-fixes.js?v=103');
     html=html.replace('./dashboard-sort-filter-v78.js?v=103','./dashboard-sort-filter-v78.js?v=109');
     html=html.replace('./ticket-dashboard-details-v54.js?v=82','./ticket-dashboard-details-v54.js?v=110');
+    const paintStabilizer='<script>(()=>{if(!window.CSS||!CSS.supports("-webkit-touch-callout","none"))return;const className="webkitPaintLayer";const selector="button,a.navAction";const style=document.createElement("style");style.id="webkitPaintStabilizer";style.textContent=".webkitPaintLayer{-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden}";document.head.appendChild(style);let queued=false;const layer=()=>{queued=false;document.querySelectorAll(selector).forEach(node=>node.classList.add(className))};const queue=()=>{if(queued)return;queued=true;requestAnimationFrame(layer)};const repaint=()=>{const nodes=[...document.querySelectorAll(selector)];nodes.forEach(node=>node.classList.remove(className));void document.documentElement.offsetHeight;requestAnimationFrame(()=>nodes.forEach(node=>node.classList.add(className)))};const start=()=>{layer();new MutationObserver(queue).observe(document.documentElement,{subtree:true,childList:true});window.addEventListener("pageshow",repaint);document.addEventListener("visibilitychange",()=>{if(!document.hidden)repaint()})};document.readyState==="loading"?document.addEventListener("DOMContentLoaded",start,{once:true}):start()})();<\/script>';
+    html=html.replace('</body>',paintStabilizer+'</body>');
     document.open();
     document.write(html);
     document.close();
