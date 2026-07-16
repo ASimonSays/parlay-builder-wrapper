@@ -32,7 +32,8 @@
       .sortFilterGlyph{display:flex;width:24px;height:19px;flex-direction:column;justify-content:space-between;align-items:flex-end}
       .sortFilterGlyph span{display:block;height:3px;border-radius:3px;background:#26303B;box-shadow:0 1px 0 rgba(255,255,255,.48)}
       .sortFilterGlyph span:nth-child(1){width:24px}.sortFilterGlyph span:nth-child(2){width:17px}.sortFilterGlyph span:nth-child(3){width:10px}
-      #ticketList .savedTimeStamp{display:inline-flex;align-items:center;margin:0;color:#596372;font-size:9px;font-weight:800;letter-spacing:.015em;white-space:nowrap}
+      #ticketList .savedTitleRow{gap:6px!important}
+      #ticketList .savedTimeStamp{display:inline-flex;align-items:center;margin:0;color:#596372;font-size:8.5px;font-weight:800;letter-spacing:0;white-space:nowrap}
       #ticketList .savedSettlement.inlineSettlement{display:inline-flex;align-items:center;margin:0 0 0 2px!important;color:#596372;font-size:9px!important;font-weight:800;letter-spacing:.015em;white-space:nowrap}
       .sortFilterEmpty{grid-column:1/-1}
       .ticketSortBackdrop{position:fixed;inset:0;z-index:12000;display:flex;align-items:flex-end;justify-content:center;padding:14px;background:rgba(20,27,36,.46);backdrop-filter:blur(3px)}
@@ -44,6 +45,7 @@
       .ticketSortOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
       .ticketSortOptions.outcomes{grid-template-columns:repeat(3,minmax(0,1fr))}
       .ticketSortOption{display:flex;align-items:center;gap:7px;min-height:39px;padding:7px 8px;border:1px solid rgba(93,105,120,.34);border-radius:8px;background:rgba(247,249,252,.74);font-size:11px;font-weight:850}
+      .ticketSortOption.compactLabel{font-size:10.5px}
       .ticketSortOption input{width:17px;height:17px;margin:0;accent-color:#a76f18}
       .ticketSortActions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:13px}
       .ticketSortActions button{width:100%;min-width:0;padding:10px 5px;font-size:10px}
@@ -52,7 +54,7 @@
         #dashboardView .dashboardHeader h2{grid-row:1!important}
         #dashboardView .dashboardActions{grid-row:2!important}
         #dashboardView .dashboardToolbarV55{gap:5px!important}
-        .ticketSortPanel{padding:13px}.ticketSortOptions.outcomes{grid-template-columns:repeat(2,minmax(0,1fr))}.ticketSortOption{font-size:10px;padding:6px}.ticketSortActions{gap:6px}
+        .ticketSortPanel{padding:13px}.ticketSortOptions.outcomes{grid-template-columns:repeat(2,minmax(0,1fr))}.ticketSortOption{font-size:10px;padding:6px}.ticketSortOption.compactLabel{font-size:9.5px}.ticketSortActions{gap:6px}
       }
     `;
     document.head.appendChild(style);
@@ -173,7 +175,7 @@
       <fieldset class="ticketSortGroup"><legend>Show</legend><div class="ticketSortOptions outcomes">
         <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="all">All</label>
         <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="active">Active</label>
-        <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="completed">Complete</label>
+        <label class="ticketSortOption compactLabel"><input type="radio" name="ticket-filter" value="completed">Complete</label>
         <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="won">Won</label>
         <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="lost">Lost</label>
         <label class="ticketSortOption"><input type="radio" name="ticket-filter" value="push">Push</label>
