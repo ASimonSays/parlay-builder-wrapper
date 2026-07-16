@@ -28,7 +28,10 @@
       #ticketSelectModeBtn{grid-column:3!important;grid-row:2!important;width:100%!important}
       #ticketSortFilterBtn{grid-column:4!important;grid-row:2!important;width:42px!important;min-width:42px!important;height:34px!important;min-height:34px!important;padding:6px!important;display:flex!important;align-items:center!important;justify-content:center!important}
       #deleteSelectedTicketsBtn{grid-column:1/-1!important;grid-row:3!important}
-      #dashboardView .ticketExpandBtn{width:84px!important;min-width:84px!important;height:32px!important;min-height:32px!important;padding:4px 5px!important;border-radius:8px!important;font-size:8px!important;line-height:1!important;letter-spacing:.035em!important;color:#26303B!important;background:linear-gradient(180deg,#E9EDF2,#C5CED9 55%,#8C98A8)!important;border-color:rgba(93,105,120,.46)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 3px 6px rgba(0,0,0,.13)!important}
+      #dashboardView .savedTicketTop{display:block!important;position:relative!important}
+      #dashboardView .savedTicketTop>div:first-child{width:100%!important;min-width:0!important}
+      #dashboardView .savedTicketTop .savedTitleRow,#dashboardView .savedTicketTop .savedMeta{padding-right:92px!important}
+      #dashboardView .ticketExpandBtn{position:absolute!important;top:0!important;right:0!important;z-index:2!important;width:84px!important;min-width:84px!important;height:32px!important;min-height:32px!important;padding:4px 5px!important;border-radius:8px!important;font-size:8px!important;line-height:1!important;letter-spacing:.035em!important;color:#26303B!important;background:linear-gradient(180deg,#E9EDF2,#C5CED9 55%,#8C98A8)!important;border-color:rgba(93,105,120,.46)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 3px 6px rgba(0,0,0,.13)!important}
       #ticketSortFilterBtn.filterActive{border-color:#9B6613!important;background:linear-gradient(180deg,#FFE69A,#D49A27 58%,#9A6310)!important;box-shadow:inset 0 0 0 2px rgba(255,239,174,.58),0 4px 8px rgba(121,78,11,.28)!important}
       .sortFilterGlyph{display:flex;width:24px;height:19px;flex-direction:column;justify-content:space-between;align-items:flex-end}
       .sortFilterGlyph span{display:block;height:3px;border-radius:3px;background:#26303B;box-shadow:0 1px 0 rgba(255,255,255,.48)}
@@ -54,10 +57,11 @@
         #dashboardView .dashboardHeader h2{grid-row:1!important}
         #dashboardView .dashboardActions{grid-row:2!important}
         #dashboardView .dashboardToolbarV55{gap:5px!important}
+        #dashboardView .savedTicketTop .savedTitleRow,#dashboardView .savedTicketTop .savedMeta{padding-right:88px!important}
         #dashboardView .ticketExpandBtn{width:80px!important;min-width:80px!important;padding:4px!important;font-size:7.5px!important;letter-spacing:.025em!important}
         .ticketSortPanel{padding:13px}.ticketSortOption{font-size:10px;padding:6px}.ticketSortActions{gap:6px}
       }
-      @media(max-width:340px){.ticketSortOptions.outcomes{grid-template-columns:repeat(2,minmax(0,1fr))}#dashboardView .ticketExpandBtn{width:54px!important;min-width:54px!important}}
+      @media(max-width:340px){.ticketSortOptions.outcomes{grid-template-columns:repeat(2,minmax(0,1fr))}#dashboardView .savedTicketTop .savedTitleRow,#dashboardView .savedTicketTop .savedMeta{padding-right:62px!important}#dashboardView .ticketExpandBtn{width:54px!important;min-width:54px!important}}
     `;
     document.head.appendChild(style);
   }
