@@ -1,0 +1,99 @@
+name: Post-cutover verification
+
+on:
+  push:
+    paths:
+      - .github/workflows/post-cutover-verification.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out app repo
+        uses: actions/checkout@v4
+        with:
+          path: app
+          fetch-depth: 0
+
+      - name: Check out root repo
+        uses: actions/checkout@v4
+        with:
+          repository: SuperL0ng/SuperL0ng.github.io
+          path: root
+          fetch-depth: 0
+
+      - name: Verify repository contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat app/CNAME)" = "simonsports.bet"
+          test "$(cat root/CNAME)" = "simonsportsbetting.com"
+          node app/scripts/verify-hosting-contract.mjs
+          node root/scripts/verify-root-deployment.mjs
+          find app -path 'app/.git' -prune -o -name '*.js' -type f -print0 | xargs -0 -n1 node --check
+          find root -path 'root/.git' -prune -o -name '*.js' -type f -print0 | xargs -0 -n1 node --check
+
+      - name: Wait for both live deployments and verify identity
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          fetch_site() {
+            local url="$1"
+            local out="$2"
+            local effective="$3"
+            curl -fsSL --max-time 25 --connect-timeout 10 \
+              -H 'Cache-Control: no-cache' \
+              -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1' \
+              -o "$out" -w '%{url_effective}' "$url" > "$effective"
+          }
+
+          ready=0
+          for attempt in $(seq 1 30); do
+            echo "Live verification attempt $attempt/30"
+            rm -f /tmp/bet.html /tmp/com.html /tmp/bet.url /tmp/com.url
+            if fetch_site "https://simonsports.bet/?cutover=${GITHUB_RUN_ID}-${attempt}" /tmp/bet.html /tmp/bet.url \
+              && fetch_site "https://simonsportsbetting.com/?cutover=${GITHUB_RUN_ID}-${attempt}" /tmp/com.html /tmp/com.url; then
+              bet_url="$(cat /tmp/bet.url)"
+              com_url="$(cat /tmp/com.url)"
+              echo "BET effective URL: $bet_url"
+              echo "COM effective URL: $com_url"
+              if [[ "$bet_url" == https://simonsports.bet/* ]] \
+                && [[ "$com_url" == https://simonsportsbetting.com/* ]] \
+                && grep -q 'ssb-gold-v1.ico' /tmp/bet.html \
+                && grep -q 'https://simonsports.bet/' /tmp/bet.html \
+                && grep -q 'const goldHost=true' /tmp/bet.html \
+                && grep -q 'silverRootHost' /tmp/com.html \
+                && grep -q 'https://simonsportsbetting.com/' /tmp/com.html \
+                && grep -q 'favicon.ico?v=silver-root-4' /tmp/com.html; then
+                ready=1
+                break
+              fi
+            fi
+            sleep 15
+          done
+
+          if [[ "$ready" != 1 ]]; then
+            echo 'Both domains did not reach the expected final deployments within the verification window.' >&2
+            echo '--- simonsports.bet response ---' >&2
+            sed -n '1,80p' /tmp/bet.html 2>/dev/null || true
+            echo '--- simonsportsbetting.com response ---' >&2
+            sed -n '1,80p' /tmp/com.html 2>/dev/null || true
+            exit 1
+          fi
+
+          curl -fsSIL --max-time 25 https://simonsports.bet/ssb-gold-v1.ico >/dev/null
+          curl -fsSIL --max-time 25 https://simonsports.bet/manifest-gold-v1.json >/dev/null
+          curl -fsSIL --max-time 25 https://simonsports.bet/simon-sports-betting-nameplate.png >/dev/null
+          curl -fsSIL --max-time 25 https://simonsports.bet/ssb_emblem_webapp_box_transparent_768.png >/dev/null
+
+          curl -fsSIL --max-time 25 https://simonsportsbetting.com/favicon.ico >/dev/null
+          curl -fsSIL --max-time 25 https://simonsportsbetting.com/manifest.json >/dev/null
+          curl -fsSIL --max-time 25 https://simonsportsbetting.com/simon-sports-betting-nameplate.png >/dev/null
+          curl -fsSIL --max-time 25 https://simonsportsbetting.com/ssb_emblem_webapp_box_transparent_768.png >/dev/null
+
+          echo 'Post-cutover live verification passed.'
