@@ -132,7 +132,7 @@
       setTimeout(retry,0);
     }
   },true);
-  document.addEventListener('click',event=>{if(!event.target.closest?.('.savedTicket'))document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(card=>{card.classList.remove('actionsMenuOpen');const toggle=card.querySelector('.savedActionsMoreToggle');if(toggle)setToggleState(card,toggle)})});
+  document.addEventListener('click',event=>{if(!event.target.closest?.('.savedActionsMenu')&&!event.target.closest?.('.savedActionsMoreToggle'))document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(card=>{card.classList.remove('actionsMenuOpen');const toggle=card.querySelector('.savedActionsMoreToggle');if(toggle)setToggleState(card,toggle)})});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(card=>{card.classList.remove('actionsMenuOpen');const toggle=card.querySelector('.savedActionsMoreToggle');if(toggle)setToggleState(card,toggle)})});
   document.addEventListener('parlay:dashboard-refreshed',retry);
 })();
