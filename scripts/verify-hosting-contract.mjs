@@ -9,7 +9,7 @@ const check=(condition,message)=>{if(!condition)failures.push(message)};
 const read=(name)=>readFileSync(join(root,name),"utf8");
 
 const required=[
-  "index.html","CNAME","manifest-gold-v1.json","library-backup.js",
+  "index.html","CNAME","manifest-gold-v1.json","library-backup.js","doubleheader-game-binding.js",
   "ssb-gold-v1.ico","ssb-gold-v1-64.png","ssb-gold-v1-128.png",
   "ssb-gold-touch-v1-180.png","ssb-gold-v1-192.png","ssb-gold-v1-512.png",
   "ssb-share-v3.png","simon-sports-betting-nameplate.png",
