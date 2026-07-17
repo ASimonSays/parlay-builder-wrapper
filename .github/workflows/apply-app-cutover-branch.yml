@@ -20,6 +20,7 @@ jobs:
         id: prep
         shell: bash
         run: |
+          sed -i 's/write_text(verifier)$/write_text(verifier.lstrip())/' scripts/prepare-app-cutover.sh
           set +e
           bash scripts/prepare-app-cutover.sh > app-cutover-prep.log 2>&1
           status=$?
