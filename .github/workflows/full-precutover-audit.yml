@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - .github/workflows/full-precutover-audit.yml
+  pull_request:
+    types: [opened, reopened, synchronize]
   workflow_dispatch:
 
 permissions:
@@ -36,7 +38,6 @@ jobs:
           APP=Path('app')
           ROOT=Path('root')
           issues=[]
-          notes=[]
 
           def text_files(base):
             skip={'.git','node_modules'}
