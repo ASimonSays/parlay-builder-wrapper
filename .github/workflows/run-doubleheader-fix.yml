@@ -1,0 +1,62 @@
+name: Run MLB doubleheader binding fix
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - .doubleheader-fix-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply stable game-instance binding
+        shell: bash
+        run: |
+          if [ ! -f doubleheader-game-binding.js ]; then
+            python3 - <<'PY'
+          from pathlib import Path
+          source=Path('.github/workflows/apply-doubleheader-fix.yml').read_text().splitlines()
+          start=next(i for i,line in enumerate(source) if "python3 - <<'PY'" in line)+1
+          end=next(i for i in range(start,len(source)) if source[i].strip()=='PY')
+          lines=source[start:end]
+          indent=min(len(line)-len(line.lstrip()) for line in lines if line.strip())
+          Path('/tmp/apply-doubleheader-fix.py').write_text('\n'.join(line[indent:] for line in lines)+'\n')
+          PY
+            python3 /tmp/apply-doubleheader-fix.py
+          fi
+
+      - name: Verify patch
+        shell: bash
+        run: |
+          node scripts/verify-hosting-contract.mjs
+          node --check tracker-core-v51.js
+          node --check tracker-sources-v51.js
+          node --check tracker-evaluator-v51.js
+          node --check actual-settlement-time.js
+          node --check pregame-status-correction.js
+          node --check doubleheader-game-binding.js
+          grep -q 'doubleheader-game-binding.js?v=1' index.html
+          grep -q 'return matches\[0\]' tracker-core-v51.js
+          ! grep -q "matches.find(g=>!isFinal(g))" tracker-core-v51.js
+
+      - name: Commit fix to pull-request branch
+        shell: bash
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo 'No patch changes to commit.'
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html tracker-core-v51.js tracker-sources-v51.js tracker-evaluator-v51.js actual-settlement-time.js pregame-status-correction.js doubleheader-game-binding.js scripts/verify-hosting-contract.mjs
+          git commit -m "Bind tickets to specific doubleheader games"
+          git push origin HEAD:${{ github.head_ref }}
