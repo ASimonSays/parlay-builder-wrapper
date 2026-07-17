@@ -1,0 +1,40 @@
+name: Apply app cutover branch
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'cutover-app-to-bet'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cutover-app-to-bet
+          fetch-depth: 0
+      - name: Execute branch preparation script
+        shell: bash
+        run: |
+          ruby -ryaml -e '
+            doc = YAML.safe_load(File.read(".github/workflows/app-cutover-prep.yml"), aliases: true)
+            step = doc.fetch("jobs").fetch("prepare").fetch("steps").find { |item| item["name"] == "Prepare final gold app deployment" }
+            abort("Preparation step not found") unless step && step["run"]
+            File.write("/tmp/app-cutover.sh", step["run"])
+          '
+          bash /tmp/app-cutover.sh
+      - name: Commit verified app cutover state
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes required."
+            exit 0
+          fi
+          git commit -m "Prepare gold app repo for simonsports.bet"
+          git push origin HEAD:cutover-app-to-bet
