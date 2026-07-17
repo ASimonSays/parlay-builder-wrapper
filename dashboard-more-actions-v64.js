@@ -11,6 +11,7 @@
     const style=document.createElement('style');
     style.id='dashboardMoreActionsV74Css';
     style.textContent=`
+      #ticketList .savedActions>.shareTicketBtn{display:none!important}
       #ticketList .savedActions.moreActionsEnabled{display:grid!important;width:100%!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:6px!important}
       #ticketList .savedActions.moreActionsEnabled>.savedActionView{grid-column:1/10!important;grid-row:1!important;height:34px!important;min-height:34px!important;padding:4px!important}
       #ticketList .savedActions.moreActionsEnabled>.ticketDetailsAction{position:static!important;grid-column:10/13!important;grid-row:1!important;width:100%!important;min-width:0!important;height:34px!important;min-height:34px!important;padding:3px 4px!important;font-size:9px!important;line-height:1!important;letter-spacing:.04em!important;color:#26303B!important;background:linear-gradient(180deg,#E9EDF2,#C5CED9 55%,#8C98A8)!important;border-color:rgba(93,105,120,.46)!important}
