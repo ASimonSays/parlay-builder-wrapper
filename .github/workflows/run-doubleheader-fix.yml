@@ -21,6 +21,7 @@ jobs:
       - name: Apply stable game-instance binding
         shell: bash
         run: |
+          set +e
           if [ ! -f doubleheader-game-binding.js ]; then
             python3 - <<'PY'
           from pathlib import Path
@@ -31,8 +32,30 @@ jobs:
           indent=min(len(line)-len(line.lstrip()) for line in lines if line.strip())
           Path('/tmp/apply-doubleheader-fix.py').write_text('\n'.join(line[indent:] for line in lines)+'\n')
           PY
-            python3 /tmp/apply-doubleheader-fix.py
+            python3 /tmp/apply-doubleheader-fix.py > /tmp/doubleheader-patch.log 2>&1
+            status=$?
+          else
+            echo 'Patch file already exists.' > /tmp/doubleheader-patch.log
+            status=0
           fi
+          cat /tmp/doubleheader-patch.log
+          echo "$status" > /tmp/doubleheader-patch-status
+          exit 0
+
+      - name: Upload patch diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doubleheader-patch-diagnostics
+          path: |
+            /tmp/doubleheader-patch.log
+            /tmp/apply-doubleheader-fix.py
+            /tmp/doubleheader-patch-status
+
+      - name: Enforce patch success
+        shell: bash
+        run: |
+          test "$(cat /tmp/doubleheader-patch-status)" = "0"
 
       - name: Verify patch
         shell: bash
