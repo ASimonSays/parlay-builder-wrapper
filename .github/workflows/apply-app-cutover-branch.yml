@@ -18,14 +18,7 @@ jobs:
           fetch-depth: 0
       - name: Execute branch preparation script
         shell: bash
-        run: |
-          ruby -ryaml -e '
-            doc = YAML.safe_load(File.read(".github/workflows/app-cutover-prep.yml"), aliases: true)
-            step = doc.fetch("jobs").fetch("prepare").fetch("steps").find { |item| item["name"] == "Prepare final gold app deployment" }
-            abort("Preparation step not found") unless step && step["run"]
-            File.write("/tmp/app-cutover.sh", step["run"])
-          '
-          bash /tmp/app-cutover.sh
+        run: bash scripts/prepare-app-cutover.sh
       - name: Commit verified app cutover state
         shell: bash
         run: |
