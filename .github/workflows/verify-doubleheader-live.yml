@@ -1,9 +1,10 @@
 name: Verify live doubleheader binding
 
 on:
-  push:
+  pull_request:
+    types: [opened, reopened, synchronize]
     paths:
-      - .github/workflows/verify-doubleheader-live.yml
+      - .verify-doubleheader-live-trigger
 
 permissions:
   contents: read
