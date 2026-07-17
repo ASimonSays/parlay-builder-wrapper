@@ -1,76 +1,38 @@
-# Parlay Tracker hosting workflow
+# Parlay Tracker hosting and release workflow
 
-## Hosting contract
+## Repository roles
 
-`SuperL0ng/parlay-tracker` is the authoritative application source.
+- `SuperL0ng/parlay-tracker` is the **app repo**: the authoritative development and staging application. Its final custom domain is `https://simonsports.bet/`, and its identity is always gold.
+- `SuperL0ng/SuperL0ng.github.io` is the **root repo**: the independent public production deployment. Its final custom domain is `https://simonsportsbetting.com/`, and its identity is silver.
 
-- GitHub Pages publishes the repository at `https://superl0ng.github.io/parlay-tracker/`.
-- ChatGPT Sites publishes `https://parlay.as973.chatgpt.site/` and proxies the live GitHub Pages application.
-- Sites owns its hostname-level icon files and injects its own icon/share metadata into both the initial response and the document written by the application wrapper.
-- Browser ticket storage remains separate because the two deployments have different origins.
+Theme identity belongs to the repository, not to hostname-detection logic. The app repo is gold wherever it is opened. The root repo is silver wherever it is opened.
 
-Ordinary application changes therefore require one GitHub commit. They must not trigger a Sites redeployment. Sites source is changed and redeployed only when its proxy, hostname metadata, access settings, or protected icon assets intentionally change.
+## Deployment contract
 
-## Protected Sites files
+The root repo is self-contained. It must not fetch, mirror, rewrite, or load the app repo at runtime. A production release is promoted by copying a tested app release into the root repo and then applying only the root repo's silver identity, metadata, and deployment contract.
 
-Do not replace or redirect these files during an application release:
+The two custom domains are separate browser origins. Each therefore has an independent `localStorage` ticket library. Ticket libraries do not follow repository or domain reassignment automatically. Export both libraries before any domain migration.
 
-- `app/[[...path]]/route.ts`
-- `public/favicon.ico`
-- `public/favicon.svg`
-- `public/apple-touch-icon.png`
-- `public/ssb-favicon-v3-64.png`
-- `public/ssb-favicon-v3-128.png`
-- `public/ssb-favicon-v3.svg`
-- `public/ssb-favicon-v3.ico`
-- `public/ssb-touch-v3-180.png`
-- `public/ssb-share-v3.png`
+## App-repo release
 
-The expected hashes are enforced by `scripts/verify-hosting-contract.mjs`.
+1. Make and test the change in `parlay-tracker`.
+2. Run `node scripts/verify-hosting-contract.mjs`.
+3. Confirm JavaScript syntax checks pass.
+4. Publish and test `https://simonsports.bet/`.
+5. Do not alter the root repo until the app release is approved for production.
 
-## Application release
+## Production promotion
 
-1. Begin from the latest `main` branch and preserve unrelated changes.
-2. Make and test the application change in this repository.
-3. Run:
+1. Export the ticket libraries from both custom domains.
+2. Copy the approved application files into the root repo through a controlled promotion.
+3. Preserve the root repo's silver icons, manifest, metadata, CNAME, and independent asset paths.
+4. Run the root deployment verifier.
+5. Publish and test `https://simonsportsbetting.com/`.
+6. Verify ticket views, Active Tickets, Close behavior, header images, icons, manifests, share metadata, and domain-local ticket storage.
 
-   ```sh
-   node scripts/verify-hosting-contract.mjs
-   ```
+## Domain roles
 
-4. Commit and push the exact verified state.
-5. Wait for GitHub Pages to publish it.
-6. Verify both public URLs with an iPhone Safari user agent.
-7. Confirm the relevant application behavior on both hosts.
-8. Do not save or deploy a new Sites version.
-
-## Sites-hosting release
-
-Use this only for an intentional Sites proxy, metadata, access, custom-domain, or icon change.
-
-1. Open the existing `parlay` Sites checkout through the Sites lifecycle workflow.
-2. Before editing, run the cross-host check from this repository:
-
-   ```sh
-   node scripts/verify-hosting-contract.mjs --sites-checkout /path/to/sites/parlay
-   ```
-
-3. Preserve the protected assets unless the user explicitly approves an icon experiment.
-4. Build and test the Sites checkout.
-5. Run the same cross-host check again.
-6. Save and deploy a Sites version from the exact verified Sites commit.
-7. Confirm deployment success through Sites deployment status.
-8. Verify the initial HTML metadata, post-`document.write()` metadata, icon responses, and application behavior publicly.
-
-## Release reporting
-
-For every application release, record and report:
-
-- GitHub commit SHA
-- GitHub Pages deployment result
-- GitHub Pages URL verification
-- Sites URL verification against the same application behavior
-- Hosting-contract check result
-- Whether Sites was redeployed (normally **no**)
-
-Never describe the two hosts as duplicate commits. GitHub contains the application commit; Sites normally exposes that live application through its protected proxy.
+| Domain | Repository | Role | Identity |
+|---|---|---|---|
+| `simonsports.bet` | `parlay-tracker` | development/staging | gold |
+| `simonsportsbetting.com` | `SuperL0ng.github.io` | public production | silver |
