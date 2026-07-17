@@ -82,3 +82,5 @@
   const start=()=>{upgradeLinks();if(location.hash)showHashView()};
   document.readyState==='loading'?window.addEventListener('DOMContentLoaded',start,{once:true}):start();
 })();
+/* Load whole-library backup tools. */
+(()=>{if(document.querySelector('script[data-library-backup]'))return;const s=document.createElement('script');s.dataset.libraryBackup='1';s.src='./library-backup.js?v=1';document.head.appendChild(s)})();
