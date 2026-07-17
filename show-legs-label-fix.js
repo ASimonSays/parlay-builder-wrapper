@@ -1,4 +1,4 @@
-/* SHOW LEGS LABEL FIX V1 — prevents Safari clipping after expand/collapse */
+/* SHOW LEGS LABEL FIX V2 — prevents Safari glyph clipping after expand/collapse */
 (() => {
   'use strict';
 
@@ -9,7 +9,8 @@
     style.id=STYLE_ID;
     style.textContent=`
       #ticketList .ticketExpandBtn,
-      #ticketList .ticketExpandBtn.ticketDetailsAction{
+      #ticketList .ticketExpandBtn.ticketDetailsAction,
+      #ticketList .ticketExpandBtn.webkitPaintLayer{
         display:flex!important;
         align-items:center!important;
         justify-content:center!important;
@@ -17,10 +18,19 @@
         overflow:visible!important;
         text-overflow:clip!important;
         white-space:nowrap!important;
-        padding-left:2px!important;
-        padding-right:2px!important;
+        padding-left:4px!important;
+        padding-right:4px!important;
         letter-spacing:0!important;
         text-indent:0!important;
+        -webkit-transform:none!important;
+        transform:none!important;
+        -webkit-backface-visibility:visible!important;
+        backface-visibility:visible!important;
+        clip-path:none!important;
+        -webkit-clip-path:none!important;
+        contain:none!important;
+        mask:none!important;
+        -webkit-mask:none!important;
       }
     `;
     document.head.appendChild(style);
@@ -43,11 +53,13 @@
     const open=button.getAttribute('aria-expanded')==='true';
     const compact=window.matchMedia('(max-width:340px)').matches;
     const label=compact?(open?'Hide':'Show'):`${open?'Hide':'Show'} ${straight?'Pick':'Legs'}`;
+    button.classList.remove('webkitPaintLayer');
+    button.style.removeProperty('-webkit-transform');
+    button.style.removeProperty('transform');
     if(button.textContent!==label)button.textContent=label;
+    void button.offsetWidth;
     requestAnimationFrame(()=>{
-      button.style.webkitTransform='translateZ(0)';
-      void button.offsetWidth;
-      button.style.webkitTransform='';
+      button.classList.remove('webkitPaintLayer');
       delete button.dataset.labelFixBusy;
     });
   };
@@ -63,7 +75,7 @@
         if(button)normalize(button);
       }
       normalizeAll();
-    }).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['aria-expanded']});
+    }).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['aria-expanded','class']});
     document.addEventListener('click',event=>{
       const button=event.target.closest?.('.ticketExpandBtn');
       if(button)setTimeout(()=>normalize(button),0);
