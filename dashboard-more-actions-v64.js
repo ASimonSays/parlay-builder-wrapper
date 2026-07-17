@@ -17,11 +17,11 @@
       #ticketList .savedTicketTop>.savedActionsMoreToggle{position:absolute;top:0;right:0;z-index:22;width:84px;min-width:84px;height:32px;min-height:32px;padding:4px 5px;border-radius:8px;font-size:8px;font-weight:900;line-height:1;letter-spacing:.035em;text-transform:uppercase;white-space:nowrap;color:#26303B!important;background:linear-gradient(180deg,#E9EDF2,#C5CED9 55%,#8C98A8)!important;border-color:rgba(93,105,120,.46)!important}
       #ticketList .savedActionsMoreToggle .moreChevron{display:inline-block;margin-left:3px;font-size:11px;line-height:1;transition:transform .18s ease}
       #ticketList .savedActionsMoreToggle[aria-expanded="true"] .moreChevron{transform:rotate(180deg)}
-      #ticketList .savedActionsMenu{display:none;position:relative;margin:8px 0 8px auto;width:min(230px,100%);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px;border:1px solid rgba(91,103,118,.55);border-radius:10px;background:linear-gradient(180deg,rgba(244,247,250,.98),rgba(190,200,212,.98));box-shadow:0 9px 22px rgba(29,38,49,.32)}
-      #ticketList .savedTicket.actionsMenuOpen{z-index:30!important;overflow:visible!important}\n      #ticketList .savedTicket.actionsMenuOpen>.savedActionsMenu{display:grid;overflow:visible!important}
-      #ticketList .savedActionsMenu>.savedActionMenuItem{width:100%!important;min-width:0!important;min-height:38px!important;margin:0!important;padding:5px 3px!important;font-size:9px!important;line-height:1.08!important;letter-spacing:.02em!important;white-space:normal!important}
-      @media(min-width:600px){#ticketList .savedTicketTop>.savedActionsMoreToggle{font-size:9px}#ticketList .savedActionsMenu>.savedActionMenuItem{font-size:10px!important}}
-      @media(max-width:390px){#ticketList .savedActions.moreActionsEnabled{gap:5px!important}#ticketList .savedActions.moreActionsEnabled>.ticketDetailsAction{font-size:8px!important;padding:3px!important}#ticketList .savedTicketTop>.savedActionsMoreToggle{width:80px;min-width:80px;padding:4px;font-size:7.5px}#ticketList .savedActionsMenu>.savedActionMenuItem{font-size:8.5px!important}}
+      body>.savedActionsMenu{display:none;position:fixed;z-index:220;width:min(230px,calc(100vw - 20px));grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px;border:1px solid rgba(91,103,118,.55);border-radius:10px;background:linear-gradient(180deg,rgba(244,247,250,.98),rgba(190,200,212,.98));box-shadow:0 9px 22px rgba(29,38,49,.32)}
+      body>.savedActionsMenu.actionsMenuVisible{display:grid!important}
+      body>.savedActionsMenu>.savedActionMenuItem{width:100%!important;min-width:0!important;min-height:38px!important;margin:0!important;padding:5px 3px!important;font-size:9px!important;line-height:1.08!important;letter-spacing:.02em!important;white-space:normal!important}
+      @media(min-width:600px){#ticketList .savedTicketTop>.savedActionsMoreToggle{font-size:9px}body>.savedActionsMenu>.savedActionMenuItem{font-size:10px!important}}
+      @media(max-width:390px){#ticketList .savedActions.moreActionsEnabled{gap:5px!important}#ticketList .savedActions.moreActionsEnabled>.ticketDetailsAction{font-size:8px!important;padding:3px!important}#ticketList .savedTicketTop>.savedActionsMoreToggle{width:80px;min-width:80px;padding:4px;font-size:7.5px}body>.savedActionsMenu>.savedActionMenuItem{font-size:8.5px!important}}
     `;
     document.head.appendChild(style);
   }
@@ -39,6 +39,21 @@
     toggle.innerHTML='Actions <span class="moreChevron">⌄</span>';
   }
 
+  function positionMenu(toggle,menu){
+    menu.classList.add('actionsMenuVisible');
+    const rect=toggle.getBoundingClientRect(),width=Math.min(230,window.innerWidth-20);
+    menu.style.left=Math.max(10,Math.min(window.innerWidth-width-10,rect.right-width))+'px';
+    menu.style.top=(rect.bottom+6)+'px';
+    requestAnimationFrame(()=>{const box=menu.getBoundingClientRect();if(box.bottom>window.innerHeight-10)menu.style.top=Math.max(10,rect.top-box.height-6)+'px'});
+  }
+
+  function closeMenu(card){
+    card.classList.remove('actionsMenuOpen');
+    const menu=card.__savedActionsMenu,toggle=card.querySelector('.savedActionsMoreToggle');
+    menu?.classList.remove('actionsMenuVisible');
+    if(toggle)setToggleState(card,toggle);
+  }
+
   function setClass(button,...classes){
     button.classList.remove(
       'savedActionView','savedActionCopy','savedActionShare','savedActionPrimary',
@@ -53,7 +68,7 @@
   function enhance(card){
     const actions=card.querySelector('.savedActions'),top=card.querySelector('.savedTicketTop');
     if(!actions||!top)return false;
-    if(actions.dataset.moreReady==='1'&&actions.classList.contains('moreActionsEnabled')&&top.querySelector(':scope > .savedActionsMoreToggle')&&card.querySelector(':scope > .savedActionsMenu'))return true;
+    if(actions.dataset.moreReady==='1'&&actions.classList.contains('moreActionsEnabled')&&top.querySelector(':scope > .savedActionsMoreToggle')&&card.__savedActionsMenu)return true;
 
     const buttons=[...actions.querySelectorAll(':scope > button,:scope > a.navAction')].filter(button=>!button.classList.contains('savedActionsMoreToggle')&&!button.classList.contains('ticketExpandBtn'));
     const view=buttons.find(button=>['VIEW','OPEN TICKET'].includes(label(button)));
@@ -74,8 +89,9 @@
 
     let toggle=top.querySelector(':scope > .savedActionsMoreToggle');
     if(!toggle){toggle=document.createElement('button');toggle.type='button';toggle.className='ghost savedActionsMoreToggle'}
-    let menu=card.querySelector(':scope > .savedActionsMenu');
+    let menu=card.__savedActionsMenu||card.querySelector(':scope > .savedActionsMenu');
     if(!menu){menu=document.createElement('div');menu.className='savedActionsMenu';menu.setAttribute('role','menu')}
+    card.__savedActionsMenu=menu;
 
     setClass(view,'savedActionView','savedActionPrimary');
     setClass(details,'ticketExpandBtn','ticketDetailsAction');
@@ -84,14 +100,15 @@
     setClass(edit,'savedActionMenuItem','savedActionEdit');setClass(del,'savedActionMenuItem','savedActionDelete');
 
     actions.replaceChildren(view,details);menu.replaceChildren(copy,share,status,duplicate,edit,del);
-    top.appendChild(toggle);card.insertBefore(menu,actions);
+    top.appendChild(toggle);document.body.appendChild(menu);
     actions.classList.add('moreActionsEnabled');card.classList.toggle('actionsMenuOpen',shouldOpen);
-    actions.dataset.moreReady='1';setToggleState(card,toggle);
+    menu.classList.toggle('actionsMenuVisible',shouldOpen);actions.dataset.moreReady='1';setToggleState(card,toggle);
+    if(shouldOpen)positionMenu(toggle,menu);
 
     toggle.onclick=event=>{event.preventDefault();event.stopPropagation();const open=!card.classList.contains('actionsMenuOpen');
-      document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(other=>{if(other!==card){other.classList.remove('actionsMenuOpen');const otherToggle=other.querySelector('.savedActionsMoreToggle');if(otherToggle)setToggleState(other,otherToggle)}});
-      card.classList.toggle('actionsMenuOpen',open);if(ticketId){if(open)openTicketIds.add(ticketId);else openTicketIds.delete(ticketId)}setToggleState(card,toggle)};
-    menu.addEventListener('click',()=>{card.classList.remove('actionsMenuOpen');if(ticketId)openTicketIds.delete(ticketId);setToggleState(card,toggle)});
+      document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(other=>{if(other!==card)closeMenu(other)});
+      card.classList.toggle('actionsMenuOpen',open);if(open)positionMenu(toggle,menu);else menu.classList.remove('actionsMenuVisible');if(ticketId){if(open)openTicketIds.add(ticketId);else openTicketIds.delete(ticketId)}setToggleState(card,toggle)};
+    menu.addEventListener('click',()=>{closeMenu(card);if(ticketId)openTicketIds.delete(ticketId)});
     return true;
   }
 
@@ -132,7 +149,9 @@
       setTimeout(retry,0);
     }
   },true);
-  document.addEventListener('click',event=>{if(!event.target.closest?.('.savedActionsMenu')&&!event.target.closest?.('.savedActionsMoreToggle'))document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(card=>{card.classList.remove('actionsMenuOpen');const toggle=card.querySelector('.savedActionsMoreToggle');if(toggle)setToggleState(card,toggle)})});
-  document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(card=>{card.classList.remove('actionsMenuOpen');const toggle=card.querySelector('.savedActionsMoreToggle');if(toggle)setToggleState(card,toggle)})});
+  document.addEventListener('click',event=>{if(!event.target.closest?.('.savedActionsMenu')&&!event.target.closest?.('.savedActionsMoreToggle'))document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(closeMenu)});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(closeMenu)});
+  window.addEventListener('resize',()=>document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(closeMenu));
+  window.addEventListener('scroll',()=>document.querySelectorAll('#ticketList .savedTicket.actionsMenuOpen').forEach(closeMenu),true);
   document.addEventListener('parlay:dashboard-refreshed',retry);
 })();
