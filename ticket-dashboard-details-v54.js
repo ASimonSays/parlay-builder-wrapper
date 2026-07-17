@@ -1,4 +1,4 @@
-/* TICKET DASHBOARD DETAILS V72 — labeled wager and leg disclosure controls */
+/* TICKET DASHBOARD DETAILS V73 — contextual leg and pick disclosure controls */
 (() => {
   'use strict';
   const KEY='parlayTracker.savedTickets.v1';
@@ -67,10 +67,10 @@
 
   function isStraight(record){return String(record?.ticket?.type||'').toLowerCase()==='straight'}
   function syncExpandButton(button,record,open){
-    const straight=isStraight(record),noun=straight?'Wager':'Legs',verb=open?'Hide':'View',symbol=open?'^':'⌄';
-    button.innerHTML=`<span class="ticketExpandLong">${verb} ${noun} ${symbol}</span><span class="ticketExpandShort">${verb} ${symbol}</span>`;
+    const straight=isStraight(record),noun=straight?'Pick':'Legs',verb=open?'Hide':'Show';
+    button.innerHTML=`<span class="ticketExpandLong">${verb} ${noun}</span><span class="ticketExpandShort">${verb}</span>`;
     button.setAttribute('aria-expanded',String(open));
-    button.setAttribute('aria-label',`${verb} ${straight?'wager':'ticket legs'}`);
+    button.setAttribute('aria-label',`${verb} ${straight?'pick':'ticket legs'}`);
   }
 
   function updateExpandAllButton(){
