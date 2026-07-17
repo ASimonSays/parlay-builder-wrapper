@@ -281,7 +281,7 @@
     document.querySelectorAll('.savedTicket').forEach((card,index)=>{
       const record=load()[index],actionsBox=card.querySelector('.savedActions');
       if(!record||!actionsBox)return;
-      if(!actionsBox.querySelector('.shareTicketBtn')){
+      if(!card.querySelector('.shareTicketBtn')){
         const b=document.createElement('button');b.type='button';b.className='ghost shareTicketBtn';b.textContent='Share';b.addEventListener('click',()=>shareTicket(record.id));
         const copy=[...actionsBox.querySelectorAll('button')].find(x=>/copy code/i.test(x.textContent));
         if(copy)copy.insertAdjacentElement('afterend',b);else actionsBox.appendChild(b);
