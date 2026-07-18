@@ -1,0 +1,10 @@
+{
+  "name": "parlay-tracker-canonical-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-static.mjs",
+    "verify:architecture": "node scripts/verify-architecture.mjs",
+    "test": "npm run build && npm run verify:architecture"
+  }
+}
