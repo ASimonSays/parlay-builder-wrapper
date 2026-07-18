@@ -1,0 +1,48 @@
+name: Remove Gate 4 generated build artifacts
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.head_ref == 'agent/canonical-app-architecture' || github.ref_name == 'agent/canonical-app-architecture'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out isolated branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/canonical-app-architecture
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify unchanged live head and corrected source bytes
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "d896165380191e4b9876f2ea99386808c937ec8a"
+          cat > /tmp/gate4-source.sha256 <<'EOF'
+          ab581ec1f05a5029eb247cf210456c3be6e334a54fd9ab8d0dd33dcd1d539574  app/src/scripts/builder-controller.js
+          7ead09345f6b0c65cc14f450e3401665fdbbeff8e1069395cae81b0e4cd95826  app/src/scripts/sharing-controller.js
+          9a15396bb6240e80812c5f9c7c04e34cb652f0683918f853b3aa19e17237691a  app/src/scripts/ticket-view-controller.js
+          f5d95ee90a1a07e47a519a635ac3bdc6139afffd35a07b7bf492ee888b8b7170  app/src/scripts/dashboard-controller.js
+          1ceb046de80502d6dcfc593d0d197223eaef9a0cc3d268eba4a59f43d93f72af  app/src/scripts/app-controller.js
+          f72737bd9ee733df162760f4be82f01cef4b63aba3ead00a53ee6e63b6ffe567  app/src/scripts/bootstrap.js
+          d9bf92ee32977f26489ae3eeee02f62ec3e27ace845b0aef8ab19d53339a6b86  package.json
+          EOF
+          sha256sum -c /tmp/gate4-source.sha256
+          test -d build/gold
+          test -d build/silver
+      - name: Remove generated outputs and one-use workflow
+        run: |
+          set -euo pipefail
+          rm -rf build .github/workflows/gate4-remove-generated-build.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Remove unintended generated Gate 4 build outputs"
+          git push origin HEAD:agent/canonical-app-architecture
