@@ -80,22 +80,18 @@ jobs:
       - name: Produce final Gate 6 evidence
         run: |
           set -euo pipefail
-          sha256sum \
+          git ls-files -z \
             .gitignore \
             README.md \
-            architecture/dashboard-dependency-map.md \
-            docs/HOSTING_WORKFLOW.md \
             package.json \
             package-lock.json \
             playwright.config.mjs \
-            scripts/verify-repository-cleanliness.mjs \
-            app/config/builds.json \
-            app/src/index.template.html \
-            app/src/styles/app.css \
-            app/src/styles/dashboard.css \
-            app/src/scripts/*.js \
-            scripts/*.mjs \
-            tests/*.mjs > gate6-final-source-sha256.txt
+            app \
+            architecture \
+            docs \
+            scripts \
+            tests \
+            | sort -z | xargs -0 sha256sum > gate6-final-source-sha256.txt
           find build/gold -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > gate6-gold-build-sha256.txt
           find build/silver -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > gate6-silver-build-sha256.txt
           cp build/gold/BUILD.json gate6-gold-BUILD.json
