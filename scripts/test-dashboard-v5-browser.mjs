@@ -35,7 +35,7 @@ window.confirm=()=>true;
 window.esc=value=>String(value??'');
 window.ParlayTrackerCore={statusObj:(state,value)=>({state,value}),baseGameMeta:()=>'',legGame:(ticket,leg)=>leg.game||ticket.game||''};
 window.ParlayTrackerSources={resetTrackingCaches(){},async fetchScoreboards(){return[]}};
-window.ParlayTrackerEvaluator={async evaluateRecord(record){return {...record,__evaluated:(record.ticket.legs||[]).map(leg=>({...leg,__live:{state:'live',value:leg.label,valueClass:'valuePending'}}))}};
+window.ParlayTrackerEvaluator={async evaluateRecord(record){return {...record,__evaluated:(record.ticket.legs||[]).map(leg=>({...leg,__live:{state:'live',value:leg.label,valueClass:'valuePending'}}))}}};
 const records=[
   {id:'2000',status:'active',ticket:{type:'sgp',legs:[{label:labels['2000']}]}},
   {id:'1718',status:'active',ticket:{type:'sgp',legs:[{label:labels['1718']}]}},
