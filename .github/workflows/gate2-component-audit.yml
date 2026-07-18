@@ -94,4 +94,7 @@ jobs:
             catalog-contract.log
             builder-contract.log
             result.txt
+            app/src/scripts/storage.js
+            app/src/scripts/catalog.js
+            app/src/scripts/builder-controller.js
           if-no-files-found: error
