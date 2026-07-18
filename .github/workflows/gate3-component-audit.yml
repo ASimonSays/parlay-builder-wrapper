@@ -78,7 +78,7 @@ jobs:
       - name: Produce Gate 3 evidence
         run: |
           set -euo pipefail
-          find dist -type f -print0 | sort -z | xargs -0 sha256sum > gate3-build-sha256.txt
+          find build -type f -print0 | sort -z | xargs -0 sha256sum > gate3-build-sha256.txt
           sha256sum \
             app/src/scripts/tracker-core.js \
             app/src/scripts/tracker-sources.js \
