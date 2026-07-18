@@ -1,5 +1,6 @@
 name: Gate 4 component audit
 
+# Exact-head rerun after generated build cleanup.
 on:
   pull_request:
     branches:
