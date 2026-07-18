@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-build="{{BUILD_NAME}}" data-theme="{{THEME_NAME}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Parlay Tracker</title>
+  <link rel="canonical" href="{{CANONICAL_URL}}">
+  <link rel="icon" href="./{{ICON}}" sizes="any">
+  <link rel="apple-touch-icon" sizes="180x180" href="./{{TOUCH_ICON}}">
+  <link rel="manifest" href="./{{MANIFEST}}">
+  <meta name="theme-color" content="{{ACCENT}}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Parlay Tracker">
+  <meta property="og:description" content="Simon Sports Betting Parlay Tracker">
+  <meta property="og:url" content="{{CANONICAL_URL}}">
+  <meta property="og:image" content="{{CANONICAL_URL}}{{SHARE_IMAGE}}">
+  <link rel="stylesheet" href="./theme.css">
+  <link rel="stylesheet" href="./app.css">
+  <link rel="stylesheet" href="./dashboard.css">
+</head>
+<body>
+  <header class="appHeader">
+    <h1>Parlay Tracker</h1>
+    <p>Canonical architecture development build</p>
+  </header>
+
+  <main>
+    <section id="dashboardView" class="dashboard" aria-labelledby="dashboardTitle">
+      <div class="dashboardHeader">
+        <div>
+          <h2 id="dashboardTitle">My Tickets</h2>
+          <p id="dashboardStatus" class="dashboardStatus" aria-live="polite"></p>
+        </div>
+        <div class="dashboardHeaderActions">
+          <button type="button" data-dashboard-action="refresh">Refresh</button>
+          <button type="button" data-dashboard-action="select-mode">Select</button>
+          <button type="button" data-dashboard-action="sort-filter">Sort &amp; Filter</button>
+        </div>
+      </div>
+      <div id="ticketList" class="ticketList"></div>
+    </section>
+  </main>
+
+  <div id="dashboardModalRoot"></div>
+
+  <script src="./storage.js"></script>
+  <script src="./dashboard-controller.js"></script>
+  <script src="./bootstrap.js"></script>
+</body>
+</html>
