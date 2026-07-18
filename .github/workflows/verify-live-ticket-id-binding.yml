@@ -1,0 +1,46 @@
+name: Verify live ticket ID binding
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - .verify-ticket-id-binding
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify both live domains
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_domain(){
+            domain="$1"
+            require_v3="$2"
+            dir="/tmp/${domain//./-}"
+            mkdir -p "$dir"
+            passed=0
+            for attempt in $(seq 1 30); do
+              nonce="$(date +%s)-$attempt"
+              if curl -fsSL --max-time 30 "https://$domain/?verify=$nonce" -o "$dir/index.html" \
+                && curl -fsSL --max-time 30 "https://$domain/show-legs-label-fix.js?verify=$nonce" -o "$dir/binding.js" \
+                && grep -q 'ticket-ID-safe dashboard binding' "$dir/binding.js" \
+                && grep -q 'stabilizeCardId' "$dir/binding.js" \
+                && grep -q 'cardId&&byId.get(cardId)' "$dir/binding.js" \
+                && grep -q "record.status!=='completed'" "$dir/binding.js"; then
+                if [ "$require_v3" != yes ] || grep -q 'show-legs-label-fix.js?v=3' "$dir/index.html"; then
+                  passed=1
+                  break
+                fi
+              fi
+              sleep 10
+            done
+            test "$passed" = 1
+            node --check "$dir/binding.js"
+            echo "$domain live ticket-ID binding verified"
+          }
+          check_domain simonsports.bet yes
+          check_domain simonsportsbetting.com no
