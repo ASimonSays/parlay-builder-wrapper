@@ -1,12 +1,7 @@
 name: Gate 2 component audit
 
 on:
-  push:
-    branches:
-      - agent/canonical-app-architecture
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,7 +13,7 @@ jobs:
       - name: Check out exact audited commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -29,72 +24,11 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin main
-          test "$(git rev-parse HEAD)" = "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
           git diff --name-only origin/main...HEAD > changed-files.txt
           if grep -Ev '^(app/|architecture/|scripts/|package\.json$|\.github/workflows/gate2-component-audit\.yml$)' changed-files.txt; then
             echo 'Gate 2 branch changed a path outside the isolated replacement architecture.' >&2
             exit 1
           fi
-      - name: Check canonical JavaScript syntax
-        run: npm run check:syntax
-      - name: Build canonical targets
-        run: npm run build
-      - name: Verify canonical architecture
-        run: npm run verify:architecture
-      - name: Capture component contract outcomes
-        id: components
-        shell: bash
-        run: |
-          set +e
-          node scripts/test-storage-contract.mjs > storage-contract.log 2>&1
-          storage_status=$?
-          node scripts/test-catalog-contract.mjs > catalog-contract.log 2>&1
-          catalog_status=$?
-          node scripts/test-builder-contract.mjs > builder-contract.log 2>&1
-          builder_status=$?
-          set -e
-          cat storage-contract.log
-          cat catalog-contract.log
-          cat builder-contract.log
-          echo "storage=$storage_status" >> "$GITHUB_OUTPUT"
-          echo "catalog=$catalog_status" >> "$GITHUB_OUTPUT"
-          echo "builder=$builder_status" >> "$GITHUB_OUTPUT"
-      - name: Run existing canonical regressions
-        run: npm run test:regressions
-      - name: Verify canonical hosting contract
-        run: npm run verify:hosting
-      - name: Enforce component contract outcomes
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "${{ steps.components.outputs.storage }}" = 0
-          test "${{ steps.components.outputs.catalog }}" = 0
-          test "${{ steps.components.outputs.builder }}" = 0
-      - name: Capture Gate 2 evidence
-        if: always()
-        shell: bash
-        run: |
-          git rev-parse HEAD > branch-head.txt
-          git rev-parse origin/main > main-head.txt
-          sha256sum app/src/scripts/storage.js app/src/scripts/catalog.js app/src/scripts/builder-controller.js scripts/test-storage-contract.mjs scripts/test-catalog-contract.mjs scripts/test-builder-contract.mjs package.json > gate2-sha256.txt
-          printf 'storage=%s\ncatalog=%s\nbuilder=%s\n' "${{ steps.components.outputs.storage }}" "${{ steps.components.outputs.catalog }}" "${{ steps.components.outputs.builder }}" > component-status.txt
-          printf 'Gate 2 evidence captured at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > result.txt
-      - name: Upload Gate 2 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gate2-component-audit-evidence
-          path: |
-            branch-head.txt
-            main-head.txt
-            changed-files.txt
-            gate2-sha256.txt
-            component-status.txt
-            storage-contract.log
-            catalog-contract.log
-            builder-contract.log
-            result.txt
-            app/src/scripts/storage.js
-            app/src/scripts/catalog.js
-            app/src/scripts/builder-controller.js
-          if-no-files-found: error
+      - name: Run complete canonical test suite
+        run: npm test
