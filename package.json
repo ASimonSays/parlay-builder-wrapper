@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check:syntax": "node scripts/check-syntax.mjs",
     "build": "node scripts/build-static.mjs",
     "verify:architecture": "node scripts/verify-architecture.mjs",
-    "test": "npm run build && npm run verify:architecture"
+    "test": "npm run check:syntax && npm run build && npm run verify:architecture"
   }
 }

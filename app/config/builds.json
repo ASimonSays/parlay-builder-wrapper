@@ -10,7 +10,8 @@
     "icon": "ssb-gold-v1.ico",
     "touchIcon": "ssb-gold-touch-v1-180.png",
     "manifest": "manifest-gold-v1.json",
-    "shareImage": "ssb-share-v3.png"
+    "shareImage": "ssb-share-v3.png",
+    "logo": "ssb_full_logo_web_768.png"
   },
   "silver": {
     "domain": "simonsportsbetting.com",
@@ -23,6 +24,7 @@
     "icon": "favicon.ico",
     "touchIcon": "ssb-touch-v3-180.png",
     "manifest": "manifest.json",
-    "shareImage": "ssb-share-v3.png"
+    "shareImage": "ssb-share-v3.png",
+    "logo": "ssb_full_logo_web_768.png"
   }
 }
