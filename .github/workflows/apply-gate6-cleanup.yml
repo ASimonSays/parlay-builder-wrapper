@@ -52,6 +52,9 @@ jobs:
       - name: Require successful cleanup application
         if: steps.cleanup.outputs.status != '0'
         run: exit 1
+      - name: Exclude temporary Gate 6 evidence files
+        run: |
+          printf '%s\n' 'gate6-*.log' 'gate6-*.txt' >> .gitignore
       - name: Install exact test runtime
         run: |
           npm ci
@@ -60,17 +63,16 @@ jobs:
         id: verify
         run: |
           set +e
-          {
+          (
+            set -euo pipefail
             git add -A
-            echo '--- tracked .github paths ---'
-            git ls-files '.github/**'
-            echo '--- tracked build paths ---'
-            git ls-files 'build/**'
+            test -z "$(git ls-files '.github/**')"
+            test -z "$(git ls-files 'build/**')"
             echo '--- staged paths ---'
             git diff --cached --name-status
             npm run verify:cleanliness
             git diff --cached --check
-          } > gate6-stage.log 2>&1
+          ) > gate6-stage.log 2>&1
           status=$?
           cat gate6-stage.log
           echo "status=$status" >> "$GITHUB_OUTPUT"
