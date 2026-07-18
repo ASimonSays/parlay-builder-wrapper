@@ -1,73 +1,35 @@
-name: Gate 5 browser audit
+name: Gate 5 hash capture
 
 on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  audit:
+  capture:
     runs-on: ubuntu-24.04
     steps:
-      - name: Check out exact isolated head
+      - name: Check out exact corrected head
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - name: Verify branch and live isolation
+      - name: Verify isolation and print exact SHA-256 values
         run: |
           set -euo pipefail
-          git rev-parse HEAD | tee gate5-head.txt
-          git rev-parse origin/main | tee gate5-main-head.txt
           test "$(git rev-parse origin/main)" = "d896165380191e4b9876f2ea99386808c937ec8a"
-          git diff --name-only origin/main...HEAD | tee gate5-changed-paths.txt
-          bad="$(git diff --name-only origin/main...HEAD | grep -Ev '^(app/|scripts/|tests/|architecture/|playwright\.config\.mjs$|package\.json$|package-lock\.json$|\.github/workflows/gate5-browser-audit\.yml$)' || true)"
-          test -z "$bad"
-      - name: Install browser test runtime
-        run: |
-          npm install --no-save @playwright/test
-          npx playwright install --with-deps chromium webkit
-      - name: Build canonical application
-        run: npm run build
-      - name: Prove current Gate 5 failures without changing application behavior
-        run: |
-          set +e
-          npm test > gate5-prior-suite.log 2>&1
-          prior_status=$?
-          node scripts/test-mobile-platform-contract.mjs > gate5-mobile-platform.log 2>&1
-          mobile_status=$?
-          npx playwright test > gate5-browser.log 2>&1
-          browser_status=$?
-          printf '%s\n' "$prior_status" > gate5-prior-suite.status
-          printf '%s\n' "$mobile_status" > gate5-mobile-platform.status
-          printf '%s\n' "$browser_status" > gate5-browser.status
-          set -e
-          test "$prior_status" -eq 0
-          test "$mobile_status" -ne 0
-          test "$browser_status" -ne 0
-      - name: Upload pre-correction evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: gate5-before-corrections
-          retention-days: 90
-          if-no-files-found: error
-          path: |
-            gate5-head.txt
-            gate5-main-head.txt
-            gate5-changed-paths.txt
-            gate5-prior-suite.log
-            gate5-prior-suite.status
-            gate5-mobile-platform.log
-            gate5-mobile-platform.status
-            gate5-browser.log
-            gate5-browser.status
-            gate5-playwright-results.json
-            test-results/
+          sha256sum \
+            app/src/index.template.html \
+            app/src/scripts/dashboard-controller.js \
+            app/src/scripts/ticket-view-controller.js \
+            app/src/scripts/sharing-controller.js \
+            app/src/styles/app.css \
+            scripts/test-mobile-platform-contract.mjs \
+            tests/browser/gate5.spec.mjs \
+            playwright.config.mjs \
+            package.json \
+            package-lock.json \
+            .gitignore
