@@ -1,6 +1,9 @@
 name: Gate 3 component audit
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -13,16 +16,94 @@ jobs:
       - name: Check out exact audited commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Record exact head
+      - name: Verify exact commit and branch isolation
         run: |
           set -euo pipefail
           git rev-parse HEAD | tee gate3-head.txt
+          git rev-parse origin/main | tee gate3-main-head.txt
           git diff --name-only origin/main...HEAD | tee gate3-changed-paths.txt
-      - name: Run current canonical suite
+          bad="$(git diff --name-only origin/main...HEAD | grep -Ev '^(app/|scripts/|architecture/|package.json$|\.github/workflows/gate3-component-audit\.yml$)' || true)"
+          test -z "$bad"
+          test ! -e .github/workflows/apply-gate3-settlement.yml
+          test ! -d .gate3
+      - name: Verify exact Gate 3 source and contract hashes
+        run: |
+          set -euo pipefail
+          cat > gate3-expected-sha256.txt <<'HASHES'
+          5187e8295dade3c06f8c8ccbd7c7609367bd16f29439c6424caa4c165222c3ad  app/src/scripts/tracker-core.js
+          ba46e03c3c1f0b8d08edc92427ab5e085d479dd527184e3e1b97383cde591dcf  app/src/scripts/tracker-sources.js
+          2ba1bfc252166a133aeadf60f9ea6882953c6cd68e6cba6c6e3a885677501a02  app/src/scripts/tracker-evaluator.js
+          80da554545ea7d2c997e8fbf44f683e52fc527e65d41e2031de25b60df218216  app/src/scripts/tracker-service.js
+          50bf23c4d19ee7f688fc794d70894900cf3f3a5dd34c7c2efbfb48c5b4c9a138  app/src/scripts/settlement-service.js
+          340f782eb5ed414c8a1556a3c96751cf8b19576261ef571a2c654b2b8db3d826  package.json
+          2461cd1f55e5e70482eb0a64bc53c2a7a98895f61cb46b0bc664e4a7f5abc2dc  scripts/test-tracker-core-contract.mjs
+          13db035b82cd929cb6a143bd96ddc31fd26997cc8980085c19de20ee49349dce  scripts/test-tracker-sources-contract.mjs
+          adc67af9792df7b0df45dd40b85e8d44ddab38d12174f8744e3dc726e94320cb  scripts/test-tracker-evaluator-contract.mjs
+          bc916cdcf839a792d2b79a993f8e7600598e8b3230a55cdccf42fe19e1d15903  scripts/test-tracker-service-contract.mjs
+          f86a335da1e345fb6db6194bcab125ff7b622e38cc37b3a7fd6964c257354476  scripts/test-settlement-contract.mjs
+          8ac80e56eaf35941c6128b71c01784e4a1b9ded235453c011b703d74153c90c4  scripts/test-tracker-market-coverage.mjs
+          HASHES
+          sha256sum -c gate3-expected-sha256.txt | tee gate3-hash-verification.txt
+      - name: Check canonical JavaScript syntax
+        run: npm run check:syntax
+      - name: Build gold and silver from canonical source
+        run: npm run build
+      - name: Verify canonical architecture
+        run: npm run verify:architecture
+      - name: Verify storage builder and catalog contracts
+        run: npm run test:components
+      - name: Verify tracker core contract
+        run: node scripts/test-tracker-core-contract.mjs
+      - name: Verify tracker sources contract
+        run: node scripts/test-tracker-sources-contract.mjs
+      - name: Verify tracker evaluator contract
+        run: node scripts/test-tracker-evaluator-contract.mjs
+      - name: Verify tracker service contract
+        run: node scripts/test-tracker-service-contract.mjs
+      - name: Verify settlement contract
+        run: node scripts/test-settlement-contract.mjs
+      - name: Verify MLB NBA WNBA market coverage
+        run: node scripts/test-tracker-market-coverage.mjs
+      - name: Run canonical regression suite
+        run: npm run test:regressions
+      - name: Verify canonical hosting contract
+        run: npm run verify:hosting
+      - name: Verify integrated package pipeline
         run: npm test
+      - name: Produce Gate 3 evidence
+        run: |
+          set -euo pipefail
+          find dist -type f -print0 | sort -z | xargs -0 sha256sum > gate3-build-sha256.txt
+          sha256sum \
+            app/src/scripts/tracker-core.js \
+            app/src/scripts/tracker-sources.js \
+            app/src/scripts/tracker-evaluator.js \
+            app/src/scripts/tracker-service.js \
+            app/src/scripts/settlement-service.js \
+            package.json \
+            scripts/test-tracker-core-contract.mjs \
+            scripts/test-tracker-sources-contract.mjs \
+            scripts/test-tracker-evaluator-contract.mjs \
+            scripts/test-tracker-service-contract.mjs \
+            scripts/test-settlement-contract.mjs \
+            scripts/test-tracker-market-coverage.mjs > gate3-final-sha256.txt
+      - name: Upload Gate 3 final evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate3-component-audit-evidence-final
+          retention-days: 90
+          path: |
+            gate3-head.txt
+            gate3-main-head.txt
+            gate3-changed-paths.txt
+            gate3-expected-sha256.txt
+            gate3-hash-verification.txt
+            gate3-final-sha256.txt
+            gate3-build-sha256.txt
+          if-no-files-found: error
