@@ -57,13 +57,35 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium webkit
       - name: Stage final tree and verify cleanup contract
+        id: verify
         run: |
-          set -euo pipefail
-          git add -A
-          test -z "$(git ls-files '.github/**')"
-          test -z "$(git ls-files 'build/**')"
-          npm run verify:cleanliness
-          git diff --cached --check
+          set +e
+          {
+            git add -A
+            echo '--- tracked .github paths ---'
+            git ls-files '.github/**'
+            echo '--- tracked build paths ---'
+            git ls-files 'build/**'
+            echo '--- staged paths ---'
+            git diff --cached --name-status
+            npm run verify:cleanliness
+            git diff --cached --check
+          } > gate6-stage.log 2>&1
+          status=$?
+          cat gate6-stage.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload final-tree diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate6-final-tree-diagnostic
+          retention-days: 14
+          path: gate6-stage.log
+          if-no-files-found: error
+      - name: Require valid final tree
+        if: steps.verify.outputs.status != '0'
+        run: exit 1
       - name: Run complete Gate 1 through Gate 6 suite
         run: npm test
       - name: Verify generated build parity
