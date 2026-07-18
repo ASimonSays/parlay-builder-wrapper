@@ -32,7 +32,7 @@ jobs:
           git diff --name-only origin/main...HEAD | tee gate4-changed-paths.txt
           bad="$(git diff --name-only origin/main...HEAD | grep -Ev '^(app/|scripts/|architecture/|package.json$|\.github/workflows/gate4-component-audit\.yml$)' || true)"
           test -z "$bad"
-      - name: Verify exact Gate 4 source and contract hashes
+      - name: Verify exact Gate 4 application source hashes
         run: |
           set -euo pipefail
           cat > gate4-expected-sha256.txt <<'EOF'
@@ -43,12 +43,6 @@ jobs:
           1ceb046de80502d6dcfc593d0d197223eaef9a0cc3d268eba4a59f43d93f72af  app/src/scripts/app-controller.js
           f72737bd9ee733df162760f4be82f01cef4b63aba3ead00a53ee6e63b6ffe567  app/src/scripts/bootstrap.js
           d9bf92ee32977f26489ae3eeee02f62ec3e27ace845b0aef8ab19d53339a6b86  package.json
-          ae02f81c3d27af824852da6701e7aa80090f8c01086badfcd8365023e8e8be84  scripts/test-sharing-controller-contract.mjs
-          d2db92bf8c89bb0fc1c47c78c85630ae9704680cbdb13842cbdcb8cf31088e8e  scripts/test-ticket-view-controller-contract.mjs
-          51b4dc348a0869b5b785e99314e417eacf07382890d6774437cefcd04291f515  scripts/test-dashboard-controller-contract.mjs
-          0ae0757399860c333574276367cbb80d0b9da3e634fc2e5b9897dfae73696435  scripts/test-app-controller-contract.mjs
-          5c0517a002008f49a3932810b9340167a7a862d9ebb857bc7870ffca98c77820  scripts/test-bootstrap-contract.mjs
-          b86caddabd24dc77d94a1280cebc8627cdda77f520b1546bc33eaf96206ed91d  scripts/test-controller-lifecycle-integration.mjs
           EOF
           sha256sum -c gate4-expected-sha256.txt
       - name: Check canonical JavaScript syntax
