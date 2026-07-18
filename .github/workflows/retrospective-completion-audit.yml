@@ -43,8 +43,26 @@ jobs:
             esac
           done < /tmp/changed-files.txt
 
-      - name: Run expanded canonical gates
-        run: npm test
+      - name: Check canonical JavaScript syntax
+        run: npm run check:syntax
+
+      - name: Build gold and silver from canonical source
+        run: npm run build
+
+      - name: Verify canonical architecture
+        run: npm run verify:architecture
+
+      - name: Test canonical doubleheader binding
+        run: node scripts/test-canonical-doubleheader-binding.mjs
+
+      - name: Test canonical ticket ID ownership
+        run: node scripts/test-canonical-ticket-id-binding.mjs
+
+      - name: Test canonical Actions-panel lifecycle
+        run: node scripts/test-canonical-action-menu-lifecycle.mjs
+
+      - name: Verify canonical hosting contract
+        run: npm run verify:hosting
 
       - name: Verify required source and regression inventory
         shell: bash
@@ -81,6 +99,7 @@ jobs:
           node -e "const p=require('./package.json'); const t=p.scripts.test; for(const name of ['test:regressions','verify:hosting']) if(!t.includes('npm run '+name)) throw new Error('Mandatory gate missing from npm test: '+name)"
 
       - name: Produce source manifest
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
@@ -90,10 +109,11 @@ jobs:
           cp /tmp/changed-files.txt audit-evidence/changed-files.txt
           find app/src app/config architecture scripts -type f -print0 | sort -z | xargs -0 sha256sum > audit-evidence/source-sha256.txt
           sha256sum package.json >> audit-evidence/source-sha256.txt
-          find build -type f -print0 | sort -z | xargs -0 sha256sum > audit-evidence/build-sha256.txt
-          printf 'Expanded canonical gates passed at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > audit-evidence/result.txt
+          if test -d build; then find build -type f -print0 | sort -z | xargs -0 sha256sum > audit-evidence/build-sha256.txt; else : > audit-evidence/build-sha256.txt; fi
+          printf 'Audit evidence captured at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > audit-evidence/result.txt
 
       - name: Upload audit evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: retrospective-completion-audit-evidence
