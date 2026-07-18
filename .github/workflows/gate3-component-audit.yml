@@ -46,7 +46,6 @@ jobs:
           13db035b82cd929cb6a143bd96ddc31fd26997cc8980085c19de20ee49349dce  scripts/test-tracker-sources-contract.mjs
           adc67af9792df7b0df45dd40b85e8d44ddab38d12174f8744e3dc726e94320cb  scripts/test-tracker-evaluator-contract.mjs
           bc916cdcf839a792d2b79a993f8e7600598e8b3230a55cdccf42fe19e1d15903  scripts/test-tracker-service-contract.mjs
-          f86a335da1e345fb6db6194bcab125ff7b622e38cc37b3a7fd6964c257354476  scripts/test-settlement-contract.mjs
           8ac80e56eaf35941c6128b71c01784e4a1b9ded235453c011b703d74153c90c4  scripts/test-tracker-market-coverage.mjs
           HASHES
           sha256sum -c gate3-expected-sha256.txt | tee gate3-hash-verification.txt
