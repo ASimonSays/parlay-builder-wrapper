@@ -15,10 +15,13 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
+    env:
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Check out audited branch
+      - name: Check out exact audited commit
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Set up Node.js
@@ -26,10 +29,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Verify branch isolation
+      - name: Verify exact commit and branch isolation
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
           git fetch origin main
           git diff --name-only origin/main...HEAD | tee /tmp/changed-files.txt
           while IFS= read -r path; do
@@ -39,10 +43,10 @@ jobs:
             esac
           done < /tmp/changed-files.txt
 
-      - name: Run canonical static gates
+      - name: Run expanded canonical gates
         run: npm test
 
-      - name: Verify required source inventory
+      - name: Verify required source and regression inventory
         shell: bash
         run: |
           set -euo pipefail
@@ -67,9 +71,14 @@ jobs:
             scripts/build-static.mjs
             scripts/check-syntax.mjs
             scripts/verify-architecture.mjs
+            scripts/test-canonical-doubleheader-binding.mjs
+            scripts/test-canonical-ticket-id-binding.mjs
+            scripts/test-canonical-action-menu-lifecycle.mjs
+            scripts/verify-canonical-hosting-contract.mjs
             package.json
           )
           for path in "${required[@]}"; do test -f "$path" || { echo "Missing required source: $path" >&2; exit 1; }; done
+          node -e "const p=require('./package.json'); const t=p.scripts.test; for(const name of ['test:regressions','verify:hosting']) if(!t.includes('npm run '+name)) throw new Error('Mandatory gate missing from npm test: '+name)"
 
       - name: Produce source manifest
         shell: bash
@@ -82,7 +91,7 @@ jobs:
           find app/src app/config architecture scripts -type f -print0 | sort -z | xargs -0 sha256sum > audit-evidence/source-sha256.txt
           sha256sum package.json >> audit-evidence/source-sha256.txt
           find build -type f -print0 | sort -z | xargs -0 sha256sum > audit-evidence/build-sha256.txt
-          printf 'Static gates passed at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > audit-evidence/result.txt
+          printf 'Expanded canonical gates passed at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > audit-evidence/result.txt
 
       - name: Upload audit evidence
         uses: actions/upload-artifact@v4
