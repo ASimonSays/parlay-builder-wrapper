@@ -1,0 +1,66 @@
+name: Gate 3 component audit
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact audited commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Record exact head
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee gate3-head.txt
+          git diff --name-only origin/main...HEAD | tee gate3-changed-paths.txt
+          bad="$(git diff --name-only origin/main...HEAD | grep -Ev '^(app/|scripts/|architecture/|package.json$|\.github/workflows/gate3-component-audit\.yml$)' || true)"
+          test -z "$bad"
+      - name: Run current canonical suite
+        run: npm test
+      - name: Produce source manifest
+        run: |
+          sha256sum \
+            app/src/scripts/tracker-core.js \
+            app/src/scripts/tracker-sources.js \
+            app/src/scripts/tracker-evaluator.js \
+            app/src/scripts/tracker-service.js \
+            app/src/scripts/settlement-service.js \
+            package.json > gate3-source-sha256.txt
+      - name: Upload Gate 3 source evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate3-source-evidence
+          retention-days: 90
+          path: |
+            gate3-head.txt
+            gate3-changed-paths.txt
+            gate3-source-sha256.txt
+            app/src/scripts/tracker-core.js
+            app/src/scripts/tracker-sources.js
+            app/src/scripts/tracker-evaluator.js
+            app/src/scripts/tracker-service.js
+            app/src/scripts/settlement-service.js
+            package.json
+            scripts/test-canonical-doubleheader-binding.mjs
+            scripts/test-canonical-ticket-id-binding.mjs
+            scripts/test-canonical-action-menu-lifecycle.mjs
+            scripts/test-storage-contract.mjs
+            scripts/test-catalog-contract.mjs
+            scripts/test-builder-contract.mjs
+            scripts/verify-architecture.mjs
+            scripts/verify-canonical-hosting-contract.mjs
+          if-no-files-found: error
