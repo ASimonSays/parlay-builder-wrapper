@@ -5,6 +5,7 @@ import vm from 'node:vm';
 
 globalThis.window=globalThis;
 vm.runInThisContext(readFileSync(new URL('../app/src/scripts/tracker-core.js',import.meta.url),'utf8'),{filename:'tracker-core.js'});
+const C=globalThis.ParlayTrackerCore;
 const S={
   sourceStatusFor:(games,league,date)=>games?.sourceStatus?.[`${String(league).toLowerCase()}|${date}`]||'',
   loadGameData:async()=>({summary:{},mlbFeed:null,errors:[]}),
@@ -16,7 +17,7 @@ vm.runInThisContext(readFileSync(new URL('../app/src/scripts/tracker-evaluator.j
 const E=globalThis.ParlayTrackerEvaluator;
 const competitor=(abbr,score,lines=[])=>({team:{abbreviation:abbr},score:String(score),linescores:lines.map(value=>({value}))});
 const game=({sport='mlb',state='post',completed=true,period=9,detail='Final',away='TB',home='BOS',awayScore=4,homeScore=4,awayLines=[1,1,1,1,0],homeLines=[1,1,1,1,0]}={})=>({id:'g',date:'2026-07-18T18:00:00Z',__sport:sport,status:{period,type:{state,completed,detail,shortDetail:detail}},competitions:[{competitors:[competitor(away,awayScore,awayLines),competitor(home,homeScore,homeLines)]}]});
-const evaluate=async(ticket,games)=>(await E.evaluateRecord({id:'r',ticket,savedAt:'2026-07-18T17:00:00Z'},games)).__evaluated[0].__live;
+const evaluate=async(ticket,games)=> (await E.evaluateRecord({id:'r',ticket,savedAt:'2026-07-18T17:00:00Z'},games)).__evaluated[0].__live;
 
 const outage=[];outage.sourceStatus={'mlb|20260718':'error'};
 let result=await evaluate({date:'20260718',league:'MLB',game:'TB@BOS',legs:[{type:'ml',team:'TB'}]},outage);
