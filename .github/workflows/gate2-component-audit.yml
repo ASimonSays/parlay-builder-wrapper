@@ -35,8 +35,42 @@ jobs:
             echo 'Gate 2 branch changed a path outside the isolated replacement architecture.' >&2
             exit 1
           fi
-      - name: Run complete canonical test suite
-        run: npm test
+      - name: Check canonical JavaScript syntax
+        run: npm run check:syntax
+      - name: Build canonical targets
+        run: npm run build
+      - name: Verify canonical architecture
+        run: npm run verify:architecture
+      - name: Test storage contract
+        id: storage
+        continue-on-error: true
+        run: node scripts/test-storage-contract.mjs
+      - name: Test catalog contract
+        id: catalog
+        continue-on-error: true
+        run: node scripts/test-catalog-contract.mjs
+      - name: Test builder contract
+        id: builder
+        continue-on-error: true
+        run: node scripts/test-builder-contract.mjs
+      - name: Run existing canonical regressions
+        id: regressions
+        continue-on-error: true
+        run: npm run test:regressions
+      - name: Verify canonical hosting contract
+        id: hosting
+        continue-on-error: true
+        run: npm run verify:hosting
+      - name: Enforce all Gate 2 outcomes
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          failed=0
+          for outcome in "${{ steps.storage.outcome }}" "${{ steps.catalog.outcome }}" "${{ steps.builder.outcome }}" "${{ steps.regressions.outcome }}" "${{ steps.hosting.outcome }}"; do
+            if [ "$outcome" != success ]; then failed=1; fi
+          done
+          exit "$failed"
       - name: Capture Gate 2 evidence
         if: always()
         shell: bash
