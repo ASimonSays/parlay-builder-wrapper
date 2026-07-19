@@ -31,10 +31,12 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - name: Prepare visual parity patch literals
+        run: node .visual-parity/prepare.mjs
+      - name: Check prepared patch syntax
+        run: node --check .visual-parity/apply.mjs
       - name: Apply visual parity transplant
-        run: |
-          node .visual-parity/prepare.mjs
-          node .visual-parity/apply.mjs
+        run: node .visual-parity/apply.mjs
       - name: Install exact dependencies and browsers
         run: |
           npm ci
