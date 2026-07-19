@@ -41,6 +41,10 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium webkit
+      - name: Verify modified source syntax
+        run: npm run check:syntax
+      - name: Verify controller contracts
+        run: npm run test:controllers
       - name: Run full permanent suite
         run: npm test
       - name: Verify bounded source changes
