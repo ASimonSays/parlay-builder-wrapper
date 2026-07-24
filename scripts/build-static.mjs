@@ -26,7 +26,7 @@ for(const [buildName,build] of Object.entries(config)){
   await writeFile(path.join(destination,'index.html'),render(template,values));
   await writeFile(path.join(destination,'theme.css'),`:root{--accent:${build.accent};--accent-soft:${build.accentSoft};--surface-top:${build.surfaceTop};--surface-bottom:${build.surfaceBottom}}\n`);
   await writeFile(path.join(destination,build.manifest),`${JSON.stringify(manifestFor(build),null,2)}\n`);
-  await cp(path.join(root,'app/src/styles/app.css'),path.join(destination,'app.css'));await cp(path.join(root,'app/src/styles/dashboard.css'),path.join(destination,'dashboard.css'));
+  for(const stylesheet of ['app.css','dashboard.css','dashboard-refinement.css'])await cp(path.join(root,'app/src/styles',stylesheet),path.join(destination,stylesheet));
   const scripts=[...template.matchAll(/<script\s+src="\.\/([^"]+)"/g)].map(match=>match[1]);for(const script of scripts)await cp(path.join(root,'app/src/scripts',script),path.join(destination,script));
   const assets=new Set([build.icon,build.touchIcon,build.shareImage,build.logo,...(build.extraAssets||[]),...(build.manifestIcons||[]).map(icon=>icon.src)]);
   for(const asset of assets){const source=path.join(root,asset);if(!await exists(source))throw new Error(`${buildName}: required build asset missing: ${asset}`);await cp(source,path.join(destination,asset))}
